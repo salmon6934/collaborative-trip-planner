@@ -43,3 +43,6 @@ docker-compose.override.yml
 
 # Kiro
 .kiro
+
+# Progress log (personal reference)
+PROGRESS.md

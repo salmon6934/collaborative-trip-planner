@@ -184,18 +184,26 @@ export interface ApiError {
   details?: Record<string, unknown>;
 }
 
-export const ErrorCodes = {
-  AUTH_INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
-  AUTH_SESSION_EXPIRED: 'AUTH_SESSION_EXPIRED',
-  TRIP_NOT_FOUND: 'TRIP_NOT_FOUND',
-  TRIP_PERMISSION_DENIED: 'TRIP_PERMISSION_DENIED',
-  INVITE_CODE_INVALID: 'INVITE_CODE_INVALID',
-  MEMBER_ALREADY_EXISTS: 'MEMBER_ALREADY_EXISTS',
-  BLOCK_NOT_FOUND: 'BLOCK_NOT_FOUND',
-  BLOCK_INVALID_CATEGORY: 'BLOCK_INVALID_CATEGORY',
-  VOTE_ALREADY_CAST: 'VOTE_ALREADY_CAST',
-  VOTE_POLL_RESOLVED: 'VOTE_POLL_RESOLVED',
-  VOTE_INSUFFICIENT_OPTIONS: 'VOTE_INSUFFICIENT_OPTIONS',
-  EXPENSE_INVALID_SPLIT: 'EXPENSE_INVALID_SPLIT',
-  EXPENSE_PERCENTAGES_INVALID: 'EXPENSE_PERCENTAGES_INVALID',
-} as const;
+// Socket.io Event Map
+export interface SocketEventMap {
+  // Itinerary events
+  'block:created': { block: ActivityBlock };
+  'block:updated': { block: ActivityBlock; updatedFields: string[] };
+  'block:moved': { block: ActivityBlock; fromDayId: string; toDayId: string };
+  'block:deleted': { blockId: string; dayId: string };
+
+  // Voting events
+  'vote:created': { vote: Vote; options: VoteOption[] };
+  'vote:cast': { voteId: string; tallies: VoteTally[] };
+  'vote:resolved': { vote: Vote };
+
+  // Presence events
+  'presence:join': { userId: string; userName: string; avatarUrl: string | null };
+  'presence:leave': { userId: string };
+  'presence:cursor': { userId: string; dayNumber: number };
+  'presence:editing': { userId: string; blockId: string | null };
+
+  // Expense events
+  'expense:created': { expense: Expense; splits: ExpenseSplit[] };
+  'expense:settled': { splitId: string };
+}
