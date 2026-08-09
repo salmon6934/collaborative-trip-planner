@@ -9,6 +9,21 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@trip-planner/shared": "*"
+    "@auth/core": "^0.41.3",
+    "@trip-planner/shared": "*",
+    "bcryptjs": "^3.0.3",
+    "next": "^16.3.0",
+    "next-auth": "^5.0.0-beta.32",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "autoprefixer": "^10.5.4",
+    "postcss": "^8.5.23",
+    "tailwindcss": "^4.3.3"
   }
 }

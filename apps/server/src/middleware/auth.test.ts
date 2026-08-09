@@ -1,0 +1,118 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import jwt from 'jsonwebtoken';
+import { authenticate, signToken, JWT_SECRET } from './auth.js';
+import type { Request, Response, NextFunction } from 'express';
+
+function createMockReq(authHeader?: string): Partial<Request> {
+  return {
+    headers: authHeader ? { authorization: authHeader } : {},
+  };
+}
+
+function createMockRes() {
+  const res: Partial<Response> = {
+    status: vi.fn().mockReturnThis() as any,
+    json: vi.fn().mockReturnThis() as any,
+  };
+  return res;
+}
+
+describe('Auth Middleware', () => {
+  let next: NextFunction;
+
+  beforeEach(() => {
+    next = vi.fn();
+  });
+
+  describe('authenticate', () => {
+    it('should reject requests without Authorization header', () => {
+      const req = createMockReq();
+      const res = createMockRes();
+
+      authenticate(req as Request, res as Response, next);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ code: 'AUTH_MISSING_TOKEN' })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should reject requests with invalid Bearer token format', () => {
+      const req = createMockReq('InvalidToken');
+      const res = createMockRes();
+
+      authenticate(req as Request, res as Response, next);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ code: 'AUTH_MISSING_TOKEN' })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should reject requests with invalid JWT', () => {
+      const req = createMockReq('Bearer invalid.token.here');
+      const res = createMockRes();
+
+      authenticate(req as Request, res as Response, next);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ code: 'AUTH_INVALID_TOKEN' })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should reject expired tokens', () => {
+      const token = jwt.sign(
+        { userId: '123', email: 'test@test.com' },
+        JWT_SECRET,
+        { expiresIn: '-1s' } // Already expired
+      );
+      const req = createMockReq(`Bearer ${token}`);
+      const res = createMockRes();
+
+      authenticate(req as Request, res as Response, next);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ code: 'AUTH_SESSION_EXPIRED' })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should accept valid tokens and attach auth payload', () => {
+      const payload = { userId: 'user-123', email: 'test@example.com' };
+      const token = signToken(payload);
+      const req = createMockReq(`Bearer ${token}`);
+      const res = createMockRes();
+
+      authenticate(req as Request, res as Response, next);
+
+      expect(next).toHaveBeenCalled();
+      expect((req as any).auth).toMatchObject(payload);
+    });
+  });
+
+  describe('signToken', () => {
+    it('should create a valid JWT with userId and email', () => {
+      const payload = { userId: 'user-456', email: 'user@example.com' };
+      const token = signToken(payload);
+
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      expect(decoded.userId).toBe(payload.userId);
+      expect(decoded.email).toBe(payload.email);
+    });
+
+    it('should create a token that expires in 7 days', () => {
+      const payload = { userId: 'user-789', email: 'user@example.com' };
+      const token = signToken(payload);
+
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const expiresIn = decoded.exp - decoded.iat;
+      // 7 days = 604800 seconds
+      expect(expiresIn).toBe(604800);
+    });
+  });
+});

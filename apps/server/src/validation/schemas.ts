@@ -101,6 +101,15 @@ export const createExpenseSchema = z.object({
   percentageSplits: z.array(percentageSplitSchema).optional(),
 });
 
+// Trip join & member role schemas
+export const joinTripSchema = z.object({
+  inviteCode: z.string().min(1, 'Invite code is required'),
+});
+
+export const updateMemberRoleSchema = z.object({
+  role: z.enum(['editor', 'viewer']),
+});
+
 // Validation helper middleware
 export function validate<T extends z.ZodType>(schema: T) {
   return (req: any, res: any, next: any) => {
