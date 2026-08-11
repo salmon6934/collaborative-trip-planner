@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import jwt from 'jsonwebtoken';
-import { authenticate, signToken, JWT_SECRET } from './auth.js';
 import type { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+
+import { authenticate, signToken, JWT_SECRET } from './auth.js';
 
 function createMockReq(authHeader?: string): Partial<Request> {
   return {
@@ -11,7 +12,9 @@ function createMockReq(authHeader?: string): Partial<Request> {
 
 function createMockRes() {
   const res: Partial<Response> = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     status: vi.fn().mockReturnThis() as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     json: vi.fn().mockReturnThis() as any,
   };
   return res;

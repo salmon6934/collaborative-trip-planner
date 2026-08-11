@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, RequestHandler } from 'express';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
@@ -14,7 +14,7 @@ const SALT_ROUNDS = 12;
  * POST /api/auth/signup
  * Creates a new user account and returns a JWT session.
  */
-router.post('/signup', validate(signupSchema), async (req: Request, res: Response) => {
+router.post('/signup', validate(signupSchema) as RequestHandler, async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body;
 
@@ -72,7 +72,7 @@ router.post('/signup', validate(signupSchema), async (req: Request, res: Respons
  * POST /api/auth/login
  * Authenticates a user with email/password and returns a JWT.
  */
-router.post('/login', validate(loginSchema), async (req: Request, res: Response) => {
+router.post('/login', validate(loginSchema) as RequestHandler, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 

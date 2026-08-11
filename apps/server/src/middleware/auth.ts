@@ -9,6 +9,7 @@ export interface AuthPayload {
 }
 
 // Extend Express Request to include auth info
+/* eslint-disable @typescript-eslint/no-namespace */
 declare global {
   namespace Express {
     interface Request {
@@ -16,6 +17,7 @@ declare global {
     }
   }
 }
+/* eslint-enable @typescript-eslint/no-namespace */
 
 /**
  * Middleware that validates JWT from the Authorization header.

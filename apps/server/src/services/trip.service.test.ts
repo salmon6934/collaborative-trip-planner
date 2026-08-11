@@ -22,10 +22,14 @@ const mockDelete = vi.fn(() => ({ where: mockWhere }));
 
 vi.mock('../db/index.js', () => ({
   db: {
-    insert: (...args: any[]) => mockInsert(...args),
-    select: (...args: any[]) => mockSelect(...args),
-    update: (...args: any[]) => mockUpdate(...args),
-    delete: (...args: any[]) => mockDelete(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    insert: (...args: any[]) => (mockInsert as any)(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    select: (...args: any[]) => (mockSelect as any)(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    update: (...args: any[]) => (mockUpdate as any)(...args),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete: (...args: any[]) => (mockDelete as any)(...args),
   },
 }));
 

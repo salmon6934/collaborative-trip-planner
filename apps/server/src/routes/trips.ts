@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, RequestHandler } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole, requireMember } from '../middleware/rbac.js';
 import {
@@ -32,7 +32,7 @@ router.use(authenticate);
  * POST /api/trips
  * Create a new trip. The authenticated user becomes the owner.
  */
-router.post('/', validate(createTripSchema), async (req: Request, res: Response) => {
+router.post('/', validate(createTripSchema) as RequestHandler, async (req: Request, res: Response) => {
   try {
     const { userId } = req.auth!;
     const trip = await createTrip(userId, req.body);
@@ -70,7 +70,7 @@ router.get('/', async (req: Request, res: Response) => {
  * GET /api/trips/:id
  * Get a trip's details. User must be a member.
  */
-router.get('/:id', requireMember(), async (req: Request, res: Response) => {
+router.get('/:id', requireMember() as RequestHandler, async (req: Request, res: Response) => {
   try {
     const tripId = req.params.id as string;
 
@@ -97,7 +97,7 @@ router.get('/:id', requireMember(), async (req: Request, res: Response) => {
  * PUT /api/trips/:id
  * Update a trip. Owner only.
  */
-router.put('/:id', validate(updateTripSchema), requireRole('owner'), async (req: Request, res: Response) => {
+router.put('/:id', validate(updateTripSchema) as RequestHandler, requireRole('owner') as RequestHandler, async (req: Request, res: Response) => {
   try {
     const tripId = req.params.id as string;
 
@@ -124,7 +124,7 @@ router.put('/:id', validate(updateTripSchema), requireRole('owner'), async (req:
  * DELETE /api/trips/:id
  * Delete a trip. Owner only.
  */
-router.delete('/:id', requireRole('owner'), async (req: Request, res: Response) => {
+router.delete('/:id', requireRole('owner') as RequestHandler, async (req: Request, res: Response) => {
   try {
     const tripId = req.params.id as string;
 
@@ -153,7 +153,7 @@ router.delete('/:id', requireRole('owner'), async (req: Request, res: Response) 
  * POST /api/trips/:id/join
  * Join a trip using an invite code.
  */
-router.post('/:id/join', validate(joinTripSchema), async (req: Request, res: Response) => {
+router.post('/:id/join', validate(joinTripSchema) as RequestHandler, async (req: Request, res: Response) => {
   try {
     const { userId } = req.auth!;
     const { inviteCode } = req.body;
@@ -193,7 +193,7 @@ router.post('/:id/join', validate(joinTripSchema), async (req: Request, res: Res
  * GET /api/trips/:id/members
  * List all members of a trip. User must be a member.
  */
-router.get('/:id/members', requireMember(), async (req: Request, res: Response) => {
+router.get('/:id/members', requireMember() as RequestHandler, async (req: Request, res: Response) => {
   try {
     const tripId = req.params.id as string;
 
@@ -212,7 +212,7 @@ router.get('/:id/members', requireMember(), async (req: Request, res: Response) 
  * PUT /api/trips/:id/members/:uid
  * Update a member's role. Owner only.
  */
-router.put('/:id/members/:uid', validate(updateMemberRoleSchema), requireRole('owner'), async (req: Request, res: Response) => {
+router.put('/:id/members/:uid', validate(updateMemberRoleSchema) as RequestHandler, requireRole('owner') as RequestHandler, async (req: Request, res: Response) => {
   try {
     const tripId = req.params.id as string;
     const targetUserId = req.params.uid as string;
@@ -248,7 +248,7 @@ router.put('/:id/members/:uid', validate(updateMemberRoleSchema), requireRole('o
  * DELETE /api/trips/:id/members/:uid
  * Remove a member from a trip. Owner only.
  */
-router.delete('/:id/members/:uid', requireRole('owner'), async (req: Request, res: Response) => {
+router.delete('/:id/members/:uid', requireRole('owner') as RequestHandler, async (req: Request, res: Response) => {
   try {
     const tripId = req.params.id as string;
     const targetUserId = req.params.uid as string;
@@ -286,7 +286,7 @@ router.delete('/:id/members/:uid', requireRole('owner'), async (req: Request, re
  * POST /api/trips/:id/blocks
  * Create an activity block. Editors and owners only.
  */
-router.post('/:id/blocks', requireRole('owner', 'editor'), async (req: Request, res: Response) => {
+router.post('/:id/blocks', requireRole('owner', 'editor') as RequestHandler, async (req: Request, res: Response) => {
   // Stub — will be implemented in Week 2 (Day 9)
   res.status(501).json({ message: 'Not implemented yet' });
 });
@@ -295,7 +295,7 @@ router.post('/:id/blocks', requireRole('owner', 'editor'), async (req: Request, 
  * PUT /api/trips/:id/blocks/:blockId
  * Update an activity block. Editors and owners only.
  */
-router.put('/:id/blocks/:blockId', requireRole('owner', 'editor'), async (req: Request, res: Response) => {
+router.put('/:id/blocks/:blockId', requireRole('owner', 'editor') as RequestHandler, async (req: Request, res: Response) => {
   // Stub — will be implemented in Week 2 (Day 9)
   res.status(501).json({ message: 'Not implemented yet' });
 });
@@ -304,7 +304,7 @@ router.put('/:id/blocks/:blockId', requireRole('owner', 'editor'), async (req: R
  * DELETE /api/trips/:id/blocks/:blockId
  * Delete an activity block. Editors and owners only.
  */
-router.delete('/:id/blocks/:blockId', requireRole('owner', 'editor'), async (req: Request, res: Response) => {
+router.delete('/:id/blocks/:blockId', requireRole('owner', 'editor') as RequestHandler, async (req: Request, res: Response) => {
   // Stub — will be implemented in Week 2 (Day 9)
   res.status(501).json({ message: 'Not implemented yet' });
 });

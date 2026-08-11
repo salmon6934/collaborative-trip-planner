@@ -3,6 +3,7 @@ import { getMembership } from '../services/trip.service.js';
 import { TripRole } from '@trip-planner/shared';
 
 // Extend Express Request to include member role
+/* eslint-disable @typescript-eslint/no-namespace */
 declare global {
   namespace Express {
     interface Request {
@@ -10,6 +11,7 @@ declare global {
     }
   }
 }
+/* eslint-enable @typescript-eslint/no-namespace */
 
 /**
  * Middleware that checks if the authenticated user is a member of the trip
