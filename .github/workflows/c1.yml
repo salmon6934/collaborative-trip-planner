@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci
+
+      # Build shared package first (other packages depend on it)
+      - name: Build shared package
+        run: npm run build --workspace=packages/shared
+
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build server
+        run: npm run build --workspace=apps/server
+
+      - name: Build web
+        run: npm run build --workspace=apps/web
+        env:
+          NEXTAUTH_SECRET: ci-test-secret
+          NEXT_PUBLIC_API_URL: http://localhost:4000
+          AUTH_TRUST_HOST: "true"
+
+      - name: Run server tests
+        run: npm run test --workspace=apps/server
