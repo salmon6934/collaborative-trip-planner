@@ -1,6 +1,6 @@
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, and, desc } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { days, activityBlocks } from '../db/schema.js';
+import { days, activityBlocks, expenses } from '../db/schema.js';
 
 // ─── Day Generation ──────────────────────────────────────────────────────────
 
@@ -76,4 +76,139 @@ export async function getDaysWithBlocks(tripId: string) {
     ...day,
     blocks: blocksByDay.get(day.id) ?? [],
   }));
+}
+
+
+// ─── Activity Block CRUD ─────────────────────────────────────────────────────
+
+export interface CreateBlockInput {
+  title: string;
+  description?: string | null;
+  category: 'food' | 'travel' | 'stay' | 'activity';
+  startTime?: string | null;
+  endTime?: string | null;
+  locationName?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  estimatedCost?: number | null;
+  currency?: string;
+  dayId: string;
+}
+
+export interface UpdateBlockInput {
+  title?: string;
+  description?: string | null;
+  category?: 'food' | 'travel' | 'stay' | 'activity';
+  startTime?: string | null;
+  endTime?: string | null;
+  locationName?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  estimatedCost?: number | null;
+  currency?: string;
+}
+
+/**
+ * Creates an activity block in a day. Assigns position using fractional indexing,
+ * appending to the end by default.
+ */
+export async function createBlock(dayId: string, tripId: string, input: CreateBlockInput, createdBy: string) {
+  // Find the max position of existing blocks in this day
+  const existingBlocks = await db
+    .select({ position: activityBlocks.position })
+    .from(activityBlocks)
+    .where(eq(activityBlocks.dayId, dayId))
+    .orderBy(desc(activityBlocks.position));
+
+  const maxPosition = existingBlocks.length > 0 ? existingBlocks[0].position : null;
+  const position = calculatePosition(maxPosition, null);
+
+  const [block] = await db
+    .insert(activityBlocks)
+    .values({
+      dayId,
+      tripId,
+      title: input.title,
+      description: input.description ?? null,
+      category: input.category,
+      startTime: input.startTime ?? null,
+      endTime: input.endTime ?? null,
+      locationName: input.locationName ?? null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
+      estimatedCost: input.estimatedCost ?? null,
+      currency: input.currency ?? 'INR',
+      position,
+      createdBy,
+    })
+    .returning();
+
+  return block;
+}
+
+/**
+ * Partially updates an activity block's fields.
+ * Returns null if the block is not found.
+ */
+export async function updateBlock(blockId: string, input: UpdateBlockInput) {
+  const updateData: Record<string, any> = {};
+
+  if (input.title !== undefined) updateData.title = input.title;
+  if (input.description !== undefined) updateData.description = input.description;
+  if (input.category !== undefined) updateData.category = input.category;
+  if (input.startTime !== undefined) updateData.startTime = input.startTime;
+  if (input.endTime !== undefined) updateData.endTime = input.endTime;
+  if (input.locationName !== undefined) updateData.locationName = input.locationName;
+  if (input.latitude !== undefined) updateData.latitude = input.latitude;
+  if (input.longitude !== undefined) updateData.longitude = input.longitude;
+  if (input.estimatedCost !== undefined) updateData.estimatedCost = input.estimatedCost;
+  if (input.currency !== undefined) updateData.currency = input.currency;
+
+  if (Object.keys(updateData).length === 0) {
+    // Nothing to update, just fetch the existing block
+    const [existing] = await db
+      .select()
+      .from(activityBlocks)
+      .where(eq(activityBlocks.id, blockId));
+    return existing ?? null;
+  }
+
+  updateData.updatedAt = new Date();
+
+  const [updated] = await db
+    .update(activityBlocks)
+    .set(updateData)
+    .where(eq(activityBlocks.id, blockId))
+    .returning();
+
+  return updated ?? null;
+}
+
+/**
+ * Deletes an activity block. First unlinks any associated expenses
+ * by setting their activityBlockId to null.
+ * Returns null if the block is not found.
+ */
+export async function deleteBlock(blockId: string) {
+  // Check if block exists
+  const [existing] = await db
+    .select()
+    .from(activityBlocks)
+    .where(eq(activityBlocks.id, blockId));
+
+  if (!existing) return null;
+
+  // Unlink any expenses that reference this block
+  await db
+    .update(expenses)
+    .set({ activityBlockId: null })
+    .where(eq(expenses.activityBlockId, blockId));
+
+  // Delete the block
+  const [deleted] = await db
+    .delete(activityBlocks)
+    .where(eq(activityBlocks.id, blockId))
+    .returning();
+
+  return deleted ?? null;
 }

@@ -6,6 +6,8 @@ import {
   updateTripSchema,
   joinTripSchema,
   updateMemberRoleSchema,
+  createBlockSchema,
+  updateBlockSchema,
   validate,
 } from '../validation/schemas.js';
 import {
@@ -19,7 +21,7 @@ import {
   updateMemberRole,
   removeMember,
 } from '../services/trip.service.js';
-import { getDaysWithBlocks } from '../services/itinerary.service.js';
+import { getDaysWithBlocks, createBlock, updateBlock, deleteBlock } from '../services/itinerary.service.js';
 import { ErrorCodes } from '@trip-planner/shared';
 
 const router = Router();
@@ -308,18 +310,48 @@ router.get('/:id/days', requireMember() as RequestHandler, async (req: Request, 
  * POST /api/trips/:id/blocks
  * Create an activity block. Editors and owners only.
  */
-router.post('/:id/blocks', requireRole('owner', 'editor') as RequestHandler, async (req: Request, res: Response) => {
-  // Stub — will be implemented in Week 2 (Day 9)
-  res.status(501).json({ message: 'Not implemented yet' });
+router.post('/:id/blocks', requireRole('owner', 'editor') as RequestHandler, validate(createBlockSchema) as RequestHandler, async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.auth!;
+    const tripId = req.params.id as string;
+    const { dayId, ...blockInput } = req.body;
+
+    const block = await createBlock(dayId, tripId, { ...blockInput, dayId }, userId);
+    res.status(201).json({ block });
+  } catch (error) {
+    console.error('Create block error:', error);
+    res.status(500).json({
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred',
+    });
+  }
 });
 
 /**
  * PUT /api/trips/:id/blocks/:blockId
  * Update an activity block. Editors and owners only.
  */
-router.put('/:id/blocks/:blockId', requireRole('owner', 'editor') as RequestHandler, async (req: Request, res: Response) => {
-  // Stub — will be implemented in Week 2 (Day 9)
-  res.status(501).json({ message: 'Not implemented yet' });
+router.put('/:id/blocks/:blockId', requireRole('owner', 'editor') as RequestHandler, validate(updateBlockSchema) as RequestHandler, async (req: Request, res: Response) => {
+  try {
+    const blockId = req.params.blockId as string;
+
+    const block = await updateBlock(blockId, req.body);
+    if (!block) {
+      res.status(404).json({
+        code: 'BLOCK_NOT_FOUND',
+        message: 'Activity block not found',
+      });
+      return;
+    }
+
+    res.status(200).json({ block });
+  } catch (error) {
+    console.error('Update block error:', error);
+    res.status(500).json({
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred',
+    });
+  }
 });
 
 /**
@@ -327,8 +359,26 @@ router.put('/:id/blocks/:blockId', requireRole('owner', 'editor') as RequestHand
  * Delete an activity block. Editors and owners only.
  */
 router.delete('/:id/blocks/:blockId', requireRole('owner', 'editor') as RequestHandler, async (req: Request, res: Response) => {
-  // Stub — will be implemented in Week 2 (Day 9)
-  res.status(501).json({ message: 'Not implemented yet' });
+  try {
+    const blockId = req.params.blockId as string;
+
+    const block = await deleteBlock(blockId);
+    if (!block) {
+      res.status(404).json({
+        code: 'BLOCK_NOT_FOUND',
+        message: 'Activity block not found',
+      });
+      return;
+    }
+
+    res.status(200).json({ message: 'Block deleted successfully' });
+  } catch (error) {
+    console.error('Delete block error:', error);
+    res.status(500).json({
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred',
+    });
+  }
 });
 
 export default router;

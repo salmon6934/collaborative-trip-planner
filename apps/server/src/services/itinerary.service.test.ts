@@ -5,14 +5,34 @@ const mockReturning = vi.fn();
 const mockValues = vi.fn(() => ({ returning: mockReturning }));
 const mockInsert = vi.fn(() => ({ values: mockValues }));
 const mockOrderBy = vi.fn();
-const mockWhere = vi.fn(() => ({ orderBy: mockOrderBy }));
+const mockWhereResult = vi.fn();
+const mockWhere = vi.fn(() => {
+  const result = {
+    orderBy: mockOrderBy,
+    then: (resolve: any, reject?: any) => mockWhereResult().then(resolve, reject),
+  };
+  return result;
+});
 const mockFrom = vi.fn(() => ({ where: mockWhere }));
 const mockSelect = vi.fn(() => ({ from: mockFrom }));
+
+// For update and delete
+const mockUpdateReturning = vi.fn();
+const mockUpdateWhere = vi.fn(() => ({ returning: mockUpdateReturning }));
+const mockSet = vi.fn(() => ({ where: mockUpdateWhere }));
+const mockUpdate = vi.fn(() => ({ set: mockSet }));
+
+const mockDeleteReturning = vi.fn();
+const mockDeleteWhere = vi.fn(() => ({ returning: mockDeleteReturning }));
+const mockDeleteFrom = vi.fn(() => ({ where: mockDeleteWhere }));
+const mockDelete = vi.fn(() => mockDeleteFrom);
 
 vi.mock('../db/index.js', () => ({
   db: {
     insert: (...args: any[]) => (mockInsert as any)(...args),
     select: (...args: any[]) => (mockSelect as any)(...args),
+    update: (...args: any[]) => (mockUpdate as any)(...args),
+    delete: (...args: any[]) => (mockDeleteFrom as any)(...args),
   },
 }));
 
@@ -24,9 +44,13 @@ vi.mock('../db/schema.js', () => ({
     tripId: 'activity_blocks.trip_id',
     position: 'activity_blocks.position',
   },
+  expenses: {
+    id: 'expenses.id',
+    activityBlockId: 'expenses.activity_block_id',
+  },
 }));
 
-import { generateDays, calculatePosition, getDaysWithBlocks } from './itinerary.service.js';
+import { generateDays, calculatePosition, getDaysWithBlocks, createBlock, updateBlock, deleteBlock } from './itinerary.service.js';
 
 describe('Itinerary Service', () => {
   beforeEach(() => {
@@ -149,6 +173,138 @@ describe('Itinerary Service', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].blocks).toEqual([]);
+    });
+  });
+
+  describe('createBlock', () => {
+    it('should create a block with position 1.0 when no existing blocks', async () => {
+      // Mock: select existing blocks in the day → empty
+      mockOrderBy.mockResolvedValueOnce([]);
+
+      const fakeBlock = {
+        id: 'block-1',
+        dayId: 'day-1',
+        tripId: 'trip-1',
+        title: 'Breakfast',
+        category: 'food',
+        position: 1.0,
+        createdBy: 'user-1',
+      };
+      mockReturning.mockResolvedValueOnce([fakeBlock]);
+
+      const result = await createBlock('day-1', 'trip-1', {
+        title: 'Breakfast',
+        category: 'food',
+        dayId: 'day-1',
+      }, 'user-1');
+
+      expect(result).toEqual(fakeBlock);
+      expect(mockInsert).toHaveBeenCalled();
+    });
+
+    it('should append block after max position when blocks exist', async () => {
+      // Mock: existing blocks with max position 2.0
+      mockOrderBy.mockResolvedValueOnce([{ position: 2.0 }, { position: 1.0 }]);
+
+      const fakeBlock = {
+        id: 'block-3',
+        dayId: 'day-1',
+        tripId: 'trip-1',
+        title: 'Museum',
+        category: 'activity',
+        position: 3.0,
+        createdBy: 'user-1',
+      };
+      mockReturning.mockResolvedValueOnce([fakeBlock]);
+
+      const result = await createBlock('day-1', 'trip-1', {
+        title: 'Museum',
+        category: 'activity',
+        dayId: 'day-1',
+      }, 'user-1');
+
+      expect(result).toEqual(fakeBlock);
+      // Position should be calculatePosition(2.0, null) = 3.0
+      expect(result.position).toBe(3.0);
+    });
+  });
+
+  describe('updateBlock', () => {
+    it('should update block fields and return updated block', async () => {
+      const fakeUpdated = {
+        id: 'block-1',
+        dayId: 'day-1',
+        tripId: 'trip-1',
+        title: 'Brunch',
+        category: 'food',
+        position: 1.0,
+      };
+      mockUpdateReturning.mockResolvedValueOnce([fakeUpdated]);
+
+      const result = await updateBlock('block-1', { title: 'Brunch' });
+
+      expect(result).toEqual(fakeUpdated);
+      expect(mockUpdate).toHaveBeenCalled();
+      expect(mockSet).toHaveBeenCalled();
+    });
+
+    it('should return null when block not found', async () => {
+      mockUpdateReturning.mockResolvedValueOnce([]);
+
+      const result = await updateBlock('nonexistent', { title: 'Test' });
+
+      expect(result).toBeNull();
+    });
+
+    it('should return existing block when no fields to update', async () => {
+      const existing = {
+        id: 'block-1',
+        dayId: 'day-1',
+        tripId: 'trip-1',
+        title: 'Breakfast',
+        category: 'food',
+        position: 1.0,
+      };
+      // When input is empty, it calls select().from().where() without orderBy
+      mockWhereResult.mockResolvedValueOnce([existing]);
+
+      const result = await updateBlock('block-1', {});
+
+      expect(result).toEqual(existing);
+    });
+  });
+
+  describe('deleteBlock', () => {
+    it('should unlink expenses and delete the block', async () => {
+      const fakeBlock = {
+        id: 'block-1',
+        dayId: 'day-1',
+        tripId: 'trip-1',
+        title: 'Breakfast',
+        category: 'food',
+        position: 1.0,
+      };
+
+      // select existing block (no orderBy)
+      mockWhereResult.mockResolvedValueOnce([fakeBlock]);
+      // update expenses (unlink) — uses mockUpdate chain
+      mockUpdateReturning.mockResolvedValueOnce([]);
+      // delete block
+      mockDeleteReturning.mockResolvedValueOnce([fakeBlock]);
+
+      const result = await deleteBlock('block-1');
+
+      expect(result).toEqual(fakeBlock);
+      expect(mockUpdate).toHaveBeenCalled();
+    });
+
+    it('should return null when block does not exist', async () => {
+      // select returns empty (no orderBy)
+      mockWhereResult.mockResolvedValueOnce([]);
+
+      const result = await deleteBlock('nonexistent');
+
+      expect(result).toBeNull();
     });
   });
 });
