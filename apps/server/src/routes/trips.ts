@@ -19,6 +19,7 @@ import {
   updateMemberRole,
   removeMember,
 } from '../services/trip.service.js';
+import { getDaysWithBlocks } from '../services/itinerary.service.js';
 import { ErrorCodes } from '@trip-planner/shared';
 
 const router = Router();
@@ -273,6 +274,27 @@ router.delete('/:id/members/:uid', requireRole('owner') as RequestHandler, async
     res.status(200).json({ message: 'Member removed successfully' });
   } catch (error) {
     console.error('Remove member error:', error);
+    res.status(500).json({
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred',
+    });
+  }
+});
+
+// ─── Days / Itinerary ────────────────────────────────────────────────────────
+
+/**
+ * GET /api/trips/:id/days
+ * Get all days for a trip with their activity blocks. User must be a member.
+ */
+router.get('/:id/days', requireMember() as RequestHandler, async (req: Request, res: Response) => {
+  try {
+    const tripId = req.params.id as string;
+
+    const days = await getDaysWithBlocks(tripId);
+    res.status(200).json({ days });
+  } catch (error) {
+    console.error('Get days error:', error);
     res.status(500).json({
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred',

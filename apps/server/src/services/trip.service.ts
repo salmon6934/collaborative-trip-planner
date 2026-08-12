@@ -3,6 +3,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { trips, tripMembers, users } from '../db/schema.js';
 import { ErrorCodes } from '@trip-planner/shared';
+import { generateDays } from './itinerary.service.js';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,9 @@ export async function createTrip(userId: string, input: CreateTripInput) {
     userId,
     role: 'owner',
   });
+
+  // Auto-generate day entries for each date in the range
+  await generateDays(trip.id, input.startDate, input.endDate);
 
   return trip;
 }

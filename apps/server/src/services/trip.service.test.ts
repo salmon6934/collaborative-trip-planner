@@ -6,6 +6,11 @@ vi.mock('nanoid', () => ({
   nanoid: (size: number) => 'abc123xyz0',
 }));
 
+// Mock itinerary service
+vi.mock('./itinerary.service.js', () => ({
+  generateDays: vi.fn().mockResolvedValue([]),
+}));
+
 // Mock db
 const mockReturning = vi.fn();
 const mockValues = vi.fn(() => ({ returning: mockReturning }));
