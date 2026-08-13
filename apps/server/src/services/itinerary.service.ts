@@ -184,6 +184,61 @@ export async function updateBlock(blockId: string, input: UpdateBlockInput) {
   return updated ?? null;
 }
 
+// ─── Drag-and-Drop Reordering ────────────────────────────────────────────────
+
+/**
+ * Moves a block to a different day and/or position.
+ * Updates the block's dayId and position, and sets updatedAt.
+ * Returns null if the block is not found.
+ */
+export async function moveBlock(blockId: string, targetDayId: string, targetPosition: number) {
+  const [existing] = await db
+    .select()
+    .from(activityBlocks)
+    .where(eq(activityBlocks.id, blockId));
+
+  if (!existing) return null;
+
+  const [updated] = await db
+    .update(activityBlocks)
+    .set({
+      dayId: targetDayId,
+      position: targetPosition,
+      updatedAt: new Date(),
+    })
+    .where(eq(activityBlocks.id, blockId))
+    .returning();
+
+  return updated ?? null;
+}
+
+/**
+ * Reorders blocks within a day by assigning sequential positions (1.0, 2.0, 3.0, ...).
+ * Takes an array of block IDs in the desired order and reassigns positions accordingly.
+ * Returns the updated blocks array.
+ */
+export async function reorderBlocks(dayId: string, blockIds: string[]) {
+  const updatedBlocks = [];
+
+  for (let i = 0; i < blockIds.length; i++) {
+    const position = i + 1.0;
+    const [updated] = await db
+      .update(activityBlocks)
+      .set({
+        position,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(activityBlocks.id, blockIds[i]), eq(activityBlocks.dayId, dayId)))
+      .returning();
+
+    if (updated) {
+      updatedBlocks.push(updated);
+    }
+  }
+
+  return updatedBlocks;
+}
+
 /**
  * Deletes an activity block. First unlinks any associated expenses
  * by setting their activityBlockId to null.

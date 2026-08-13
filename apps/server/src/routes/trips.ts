@@ -8,6 +8,8 @@ import {
   updateMemberRoleSchema,
   createBlockSchema,
   updateBlockSchema,
+  moveBlockSchema,
+  reorderBlocksSchema,
   validate,
 } from '../validation/schemas.js';
 import {
@@ -21,7 +23,7 @@ import {
   updateMemberRole,
   removeMember,
 } from '../services/trip.service.js';
-import { getDaysWithBlocks, createBlock, updateBlock, deleteBlock } from '../services/itinerary.service.js';
+import { getDaysWithBlocks, createBlock, updateBlock, deleteBlock, moveBlock, reorderBlocks } from '../services/itinerary.service.js';
 import { ErrorCodes } from '@trip-planner/shared';
 
 const router = Router();
@@ -374,6 +376,54 @@ router.delete('/:id/blocks/:blockId', requireRole('owner', 'editor') as RequestH
     res.status(200).json({ message: 'Block deleted successfully' });
   } catch (error) {
     console.error('Delete block error:', error);
+    res.status(500).json({
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred',
+    });
+  }
+});
+
+// ─── Drag-and-Drop Reordering ────────────────────────────────────────────────
+
+/**
+ * PUT /api/trips/:id/blocks/move
+ * Move an activity block to a different day/position. Editors and owners only.
+ */
+router.put('/:id/blocks/move', requireRole('owner', 'editor') as RequestHandler, validate(moveBlockSchema) as RequestHandler, async (req: Request, res: Response) => {
+  try {
+    const { blockId, targetDayId, targetPosition } = req.body;
+
+    const block = await moveBlock(blockId, targetDayId, targetPosition);
+    if (!block) {
+      res.status(404).json({
+        code: 'BLOCK_NOT_FOUND',
+        message: 'Activity block not found',
+      });
+      return;
+    }
+
+    res.status(200).json({ block });
+  } catch (error) {
+    console.error('Move block error:', error);
+    res.status(500).json({
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred',
+    });
+  }
+});
+
+/**
+ * PUT /api/trips/:id/blocks/reorder
+ * Reorder blocks within a day. Editors and owners only.
+ */
+router.put('/:id/blocks/reorder', requireRole('owner', 'editor') as RequestHandler, validate(reorderBlocksSchema) as RequestHandler, async (req: Request, res: Response) => {
+  try {
+    const { dayId, blockIds } = req.body;
+
+    const blocks = await reorderBlocks(dayId, blockIds);
+    res.status(200).json({ blocks });
+  } catch (error) {
+    console.error('Reorder blocks error:', error);
     res.status(500).json({
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred',

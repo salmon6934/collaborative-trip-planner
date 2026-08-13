@@ -1,0 +1,91 @@
+import { Server as SocketIOServer } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { Server as HttpServer } from 'http';
+import { Redis } from 'ioredis';
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET, AuthPayload } from '../middleware/auth.js';
+
+/**
+ * Initializes Socket.io server attached to the given HTTP server.
+ * Configures Redis adapter for horizontal scaling and JWT auth middleware.
+ */
+export function initializeSocketServer(
+  httpServer: HttpServer,
+  redisUrl: string
+): SocketIOServer {
+  const io = new SocketIOServer(httpServer, {
+    cors: {
+      origin: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+      methods: ['GET', 'POST'],
+      credentials: true,
+    },
+  });
+
+  // Setup Redis adapter for pub/sub across multiple server instances
+  const pubClient = new Redis(redisUrl);
+  const subClient = pubClient.duplicate();
+
+  // Handle Redis connection errors gracefully
+  pubClient.on('error', (err) => {
+    console.error('Redis pub client error:', err.message);
+  });
+  subClient.on('error', (err) => {
+    console.error('Redis sub client error:', err.message);
+  });
+
+  io.adapter(createAdapter(pubClient, subClient));
+
+  // Authentication middleware: validate JWT from handshake auth.token
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+
+    if (!token) {
+      return next(new Error('AUTH_MISSING_TOKEN'));
+    }
+
+    try {
+      const payload = jwt.verify(token, JWT_SECRET) as AuthPayload;
+      socket.data.userId = payload.userId;
+      socket.data.email = payload.email;
+      next();
+    } catch (error) {
+      if (error instanceof jwt.TokenExpiredError) {
+        return next(new Error('AUTH_SESSION_EXPIRED'));
+      }
+      return next(new Error('AUTH_INVALID_TOKEN'));
+    }
+  });
+
+  // Connection handler: room join/leave
+  io.on('connection', (socket) => {
+    const userId = socket.data.userId;
+
+    // Client joins a trip room
+    socket.on('join:trip', (tripId: string) => {
+      if (!tripId || typeof tripId !== 'string') {
+        return;
+      }
+      socket.join(`trip:${tripId}`);
+      socket.data.tripId = tripId;
+    });
+
+    // Client explicitly leaves a trip room
+    socket.on('leave:trip', (tripId: string) => {
+      if (!tripId || typeof tripId !== 'string') {
+        return;
+      }
+      socket.leave(`trip:${tripId}`);
+      if (socket.data.tripId === tripId) {
+        socket.data.tripId = undefined;
+      }
+    });
+
+    // On disconnect, cleanup is automatic (socket.io removes from all rooms)
+    socket.on('disconnect', () => {
+      // Socket.io automatically removes the socket from all rooms on disconnect.
+      // Additional presence cleanup can be added here later.
+    });
+  });
+
+  return io;
+}

@@ -60,6 +60,11 @@ export const moveBlockSchema = z.object({
   targetPosition: z.number().min(0),
 });
 
+export const reorderBlocksSchema = z.object({
+  dayId: uuidSchema,
+  blockIds: z.array(uuidSchema).min(1),
+});
+
 // Vote schemas
 export const createVoteOptionSchema = z.object({
   title: z.string().min(1).max(200),

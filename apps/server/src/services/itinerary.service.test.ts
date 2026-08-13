@@ -50,11 +50,28 @@ vi.mock('../db/schema.js', () => ({
   },
 }));
 
-import { generateDays, calculatePosition, getDaysWithBlocks, createBlock, updateBlock, deleteBlock } from './itinerary.service.js';
+import { generateDays, calculatePosition, getDaysWithBlocks, createBlock, updateBlock, deleteBlock, moveBlock, reorderBlocks } from './itinerary.service.js';
 
 describe('Itinerary Service', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    // Re-establish the mock chain implementations after reset
+    mockValues.mockImplementation(() => ({ returning: mockReturning }));
+    mockInsert.mockImplementation(() => ({ values: mockValues }));
+    mockWhere.mockImplementation(() => {
+      const result = {
+        orderBy: mockOrderBy,
+        then: (resolve: any, reject?: any) => mockWhereResult().then(resolve, reject),
+      };
+      return result;
+    });
+    mockFrom.mockImplementation(() => ({ where: mockWhere }));
+    mockSelect.mockImplementation(() => ({ from: mockFrom }));
+    mockSet.mockImplementation(() => ({ where: mockUpdateWhere }));
+    mockUpdateWhere.mockImplementation(() => ({ returning: mockUpdateReturning }));
+    mockUpdate.mockImplementation(() => ({ set: mockSet }));
+    mockDeleteWhere.mockImplementation(() => ({ returning: mockDeleteReturning }));
+    mockDeleteFrom.mockImplementation(() => ({ where: mockDeleteWhere }));
   });
 
   describe('generateDays', () => {
@@ -305,6 +322,136 @@ describe('Itinerary Service', () => {
       const result = await deleteBlock('nonexistent');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('moveBlock', () => {
+    it('should move a block to a new day and position', async () => {
+      const existingBlock = {
+        id: 'block-1',
+        dayId: 'day-1',
+        tripId: 'trip-1',
+        title: 'Breakfast',
+        category: 'food',
+        position: 1.0,
+      };
+
+      // select existing block → thenable resolves via mockWhereResult
+      mockWhereResult.mockResolvedValueOnce([existingBlock]);
+
+      const movedBlock = {
+        ...existingBlock,
+        dayId: 'day-2',
+        position: 2.5,
+        updatedAt: new Date(),
+      };
+      // update().set().where().returning()
+      mockUpdateReturning.mockResolvedValueOnce([movedBlock]);
+
+      const result = await moveBlock('block-1', 'day-2', 2.5);
+
+      expect(result).toEqual(movedBlock);
+      expect(result!.dayId).toBe('day-2');
+      expect(result!.position).toBe(2.5);
+      expect(mockUpdate).toHaveBeenCalled();
+      expect(mockSet).toHaveBeenCalled();
+    });
+
+    it('should return null when block does not exist', async () => {
+      // select returns empty
+      mockWhereResult.mockResolvedValueOnce([]);
+
+      const result = await moveBlock('nonexistent', 'day-2', 1.0);
+
+      expect(result).toBeNull();
+    });
+
+    it('should handle moving block to an empty day (position 1.0)', async () => {
+      const existingBlock = {
+        id: 'block-1',
+        dayId: 'day-1',
+        tripId: 'trip-1',
+        title: 'Museum',
+        category: 'activity',
+        position: 3.0,
+      };
+
+      mockWhereResult.mockResolvedValueOnce([existingBlock]);
+
+      const movedBlock = {
+        ...existingBlock,
+        dayId: 'day-3',
+        position: 1.0,
+        updatedAt: new Date(),
+      };
+      mockUpdateReturning.mockResolvedValueOnce([movedBlock]);
+
+      const result = await moveBlock('block-1', 'day-3', 1.0);
+
+      expect(result).toEqual(movedBlock);
+      expect(result!.dayId).toBe('day-3');
+      expect(result!.position).toBe(1.0);
+    });
+  });
+
+  describe('reorderBlocks', () => {
+    it('should assign sequential positions to blocks in the given order', async () => {
+      const blockIds = ['block-3', 'block-1', 'block-2'];
+
+      // Each update().set().where().returning() call in the loop
+      mockUpdateReturning
+        .mockResolvedValueOnce([{ id: 'block-3', dayId: 'day-1', position: 1.0 }])
+        .mockResolvedValueOnce([{ id: 'block-1', dayId: 'day-1', position: 2.0 }])
+        .mockResolvedValueOnce([{ id: 'block-2', dayId: 'day-1', position: 3.0 }]);
+
+      const result = await reorderBlocks('day-1', blockIds);
+
+      expect(result).toHaveLength(3);
+      expect(result[0].position).toBe(1.0);
+      expect(result[1].position).toBe(2.0);
+      expect(result[2].position).toBe(3.0);
+    });
+
+    it('should handle reordering a single block', async () => {
+      mockUpdateReturning.mockResolvedValueOnce([{ id: 'block-1', dayId: 'day-1', position: 1.0 }]);
+
+      const result = await reorderBlocks('day-1', ['block-1']);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].position).toBe(1.0);
+    });
+
+    it('should skip blocks that do not belong to the day', async () => {
+      // First block updates, second returns empty array (block not in this day)
+      mockUpdateReturning
+        .mockResolvedValueOnce([{ id: 'block-1', dayId: 'day-1', position: 1.0 }])
+        .mockResolvedValueOnce([]);
+
+      const result = await reorderBlocks('day-1', ['block-1', 'block-wrong']);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('block-1');
+    });
+
+    it('should produce consistent non-colliding positions for 4 blocks after a move', async () => {
+      // Simulates: had 5 blocks, moved block-3 away, now reordering remaining 4
+      const blockIds = ['block-1', 'block-2', 'block-4', 'block-5'];
+
+      mockUpdateReturning
+        .mockResolvedValueOnce([{ id: 'block-1', dayId: 'day-1', position: 1.0 }])
+        .mockResolvedValueOnce([{ id: 'block-2', dayId: 'day-1', position: 2.0 }])
+        .mockResolvedValueOnce([{ id: 'block-4', dayId: 'day-1', position: 3.0 }])
+        .mockResolvedValueOnce([{ id: 'block-5', dayId: 'day-1', position: 4.0 }]);
+
+      const result = await reorderBlocks('day-1', blockIds);
+
+      expect(result).toHaveLength(4);
+      // Verify positions are sequential and never collide
+      const positions = result.map((b) => b.position);
+      expect(positions).toEqual([1.0, 2.0, 3.0, 4.0]);
+      // Verify no duplicates
+      const uniquePositions = new Set(positions);
+      expect(uniquePositions.size).toBe(positions.length);
     });
   });
 });
