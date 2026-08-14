@@ -4,6 +4,7 @@ import { Server as HttpServer } from 'http';
 import { Redis } from 'ioredis';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET, AuthPayload } from '../middleware/auth.js';
+import { registerBlockHandlers } from './blocks.js';
 
 /**
  * Initializes Socket.io server attached to the given HTTP server.
@@ -79,6 +80,9 @@ export function initializeSocketServer(
         socket.data.tripId = undefined;
       }
     });
+
+    // Register block event handlers for real-time itinerary collaboration
+    registerBlockHandlers(io, socket);
 
     // On disconnect, cleanup is automatic (socket.io removes from all rooms)
     socket.on('disconnect', () => {
