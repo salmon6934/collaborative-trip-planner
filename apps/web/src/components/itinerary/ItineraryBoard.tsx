@@ -106,7 +106,7 @@ export function ItineraryBoard() {
       );
 
       try {
-        await fetch(`${API_URL}/api/trips/${tripId}/blocks/reorder`, {
+        const res = await fetch(`${API_URL}/api/trips/${tripId}/blocks/reorder`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -114,6 +114,10 @@ export function ItineraryBoard() {
           },
           body: JSON.stringify({ dayId: sourceDay.id, blockIds: newBlockIds }),
         });
+        if (!res.ok) {
+          console.error('Reorder failed:', res.status, await res.text());
+          fetchDays();
+        }
       } catch {
         // Revert on error
         fetchDays();
@@ -141,7 +145,7 @@ export function ItineraryBoard() {
       );
 
       try {
-        await fetch(`${API_URL}/api/trips/${tripId}/blocks/move`, {
+        const res = await fetch(`${API_URL}/api/trips/${tripId}/blocks/move`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -153,6 +157,10 @@ export function ItineraryBoard() {
             targetPosition,
           }),
         });
+        if (!res.ok) {
+          console.error('Move failed:', res.status, await res.text());
+          fetchDays();
+        }
       } catch {
         // Revert on error
         fetchDays();
