@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
@@ -13,6 +13,43 @@ export default function TripSettingsPage() {
 
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [loadingTrip, setLoadingTrip] = useState(true);
+
+  useEffect(() => {
+    async function fetchTrip() {
+      if (!token) return;
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+        const res = await fetch(`${API_URL}/api/trips/${tripId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setInviteCode(data.trip.inviteCode);
+        }
+      } catch {
+        // Silently fail — invite code just won't show
+      } finally {
+        setLoadingTrip(false);
+      }
+    }
+    fetchTrip();
+  }, [token, tripId]);
+
+  async function handleCopyInviteCode() {
+    const inviteLink = `${window.location.origin}/join/${inviteCode}`;
+    await navigator.clipboard.writeText(inviteLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleCopyCode() {
+    await navigator.clipboard.writeText(inviteCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   async function handleDelete() {
     if (!token) return;
@@ -51,10 +88,48 @@ export default function TripSettingsPage() {
         Manage trip details, members, and invite links.
       </p>
 
-      <div className="mt-8 rounded-xl border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-        <p className="text-gray-500">
-          Trip settings and member management UI coming soon.
+      {/* Invite Section */}
+      <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6">
+        <h3 className="text-lg font-semibold text-gray-900">Invite Members</h3>
+        <p className="mt-1 text-sm text-gray-600">
+          Share the invite code or link below. Anyone with this code can join as an Editor.
         </p>
+
+        {loadingTrip ? (
+          <div className="mt-4 h-10 w-48 animate-pulse rounded-lg bg-gray-100" />
+        ) : inviteCode ? (
+          <div className="mt-4 space-y-3">
+            {/* Invite code display */}
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm font-medium text-gray-900 select-all">
+                {inviteCode}
+              </div>
+              <button
+                onClick={handleCopyCode}
+                className="rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {copied ? '✓ Copied' : 'Copy Code'}
+              </button>
+            </div>
+
+            {/* Copy full link */}
+            <button
+              onClick={handleCopyInviteCode}
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              {copied ? 'Copied!' : 'Copy Invite Link'}
+            </button>
+
+            <p className="text-xs text-gray-500">
+              Link format: {typeof window !== 'undefined' ? window.location.origin : ''}/join/{inviteCode}
+            </p>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-gray-500">Unable to load invite code.</p>
+        )}
       </div>
 
       {/* Danger Zone */}

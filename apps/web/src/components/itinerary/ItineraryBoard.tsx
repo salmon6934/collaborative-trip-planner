@@ -160,6 +160,33 @@ export function ItineraryBoard() {
     }
   }
 
+  async function handleDeleteBlock(blockId: string) {
+    if (!token) return;
+
+    // Optimistic: remove from local state
+    setDays((prev) =>
+      prev.map((d) => ({
+        ...d,
+        blocks: d.blocks.filter((b) => b.id !== blockId),
+      }))
+    );
+
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const res = await fetch(`${API_URL}/api/trips/${tripId}/blocks/${blockId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        // Revert on error
+        fetchDays();
+      }
+    } catch {
+      fetchDays();
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -202,6 +229,7 @@ export function ItineraryBoard() {
               date={day.date}
               blocks={day.blocks}
               onAddActivity={(dayId) => setAddModalDayId(dayId)}
+              onDeleteBlock={handleDeleteBlock}
             />
           ))}
         </div>

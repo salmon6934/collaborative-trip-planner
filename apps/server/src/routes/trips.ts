@@ -31,6 +31,46 @@ const router = Router();
 // All trip routes require authentication
 router.use(authenticate);
 
+// ─── Join via Invite Code (no trip ID needed) ────────────────────────────────
+
+/**
+ * POST /api/trips/join
+ * Join a trip using only an invite code. No trip ID required.
+ */
+router.post('/join', validate(joinTripSchema) as RequestHandler, async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.auth!;
+    const { inviteCode } = req.body;
+
+    const result = await joinTrip(userId, inviteCode);
+
+    if ('error' in result) {
+      if (result.error === ErrorCodes.INVITE_CODE_INVALID) {
+        res.status(404).json({
+          code: ErrorCodes.INVITE_CODE_INVALID,
+          message: 'Invalid invite code',
+        });
+        return;
+      }
+      if (result.error === ErrorCodes.MEMBER_ALREADY_EXISTS) {
+        res.status(409).json({
+          code: ErrorCodes.MEMBER_ALREADY_EXISTS,
+          message: 'You are already a member of this trip',
+        });
+        return;
+      }
+    }
+
+    res.status(200).json({ trip: (result as any).trip });
+  } catch (error) {
+    console.error('Join trip error:', error);
+    res.status(500).json({
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred',
+    });
+  }
+});
+
 // ─── Trip CRUD ───────────────────────────────────────────────────────────────
 
 /**

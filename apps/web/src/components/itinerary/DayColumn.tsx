@@ -10,9 +10,10 @@ interface DayColumnProps {
   date: string;
   blocks: BlockData[];
   onAddActivity: (dayId: string) => void;
+  onDeleteBlock: (blockId: string) => void;
 }
 
-export function DayColumn({ dayId, dayNumber, date, blocks, onAddActivity }: DayColumnProps) {
+export function DayColumn({ dayId, dayNumber, date, blocks, onAddActivity, onDeleteBlock }: DayColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: dayId });
 
   const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
@@ -50,7 +51,7 @@ export function DayColumn({ dayId, dayNumber, date, blocks, onAddActivity }: Day
       >
         <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
           {blocks.map((block) => (
-            <SortableBlock key={block.id} block={block} />
+            <SortableBlock key={block.id} block={block} onDelete={onDeleteBlock} />
           ))}
         </SortableContext>
 

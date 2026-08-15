@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useCallback } from 'react';
 import { fetchTrips, createTripApi } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface Trip {
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
 
   const loadTrips = useCallback(async () => {
     if (!session?.accessToken) return;
@@ -46,12 +48,20 @@ export default function DashboardPage() {
             Plan and manage your collaborative trips
           </p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-        >
-          + Create Trip
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowJoinModal(true)}
+            className="rounded-lg border border-indigo-600 px-4 py-2.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            Join Trip
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            + Create Trip
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -104,6 +114,18 @@ export default function DashboardPage() {
           onClose={() => setShowModal(false)}
           onCreated={() => {
             setShowModal(false);
+            loadTrips();
+          }}
+        />
+      )}
+
+      {/* Join Trip Modal */}
+      {showJoinModal && (
+        <JoinTripModal
+          token={session?.accessToken || ''}
+          onClose={() => setShowJoinModal(false)}
+          onJoined={() => {
+            setShowJoinModal(false);
             loadTrips();
           }}
         />
@@ -226,6 +248,108 @@ function CreateTripModal({
               className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
             >
               {loading ? 'Creating...' : 'Create Trip'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function JoinTripModal({
+  token,
+  onClose,
+  onJoined,
+}: {
+  token: string;
+  onClose: () => void;
+  onJoined: () => void;
+}) {
+  const [inviteCode, setInviteCode] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const res = await fetch(`${API_URL}/api/trips/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ inviteCode: inviteCode.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 409) {
+          // Already a member — navigate to the trip
+          throw new Error('You are already a member of this trip');
+        }
+        throw new Error(data.message || 'Invalid invite code');
+      }
+
+      // Navigate to the joined trip
+      if (data.trip?.id) {
+        router.push(`/trip/${data.trip.id}`);
+      }
+      onJoined();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to join trip');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <h2 className="mb-4 text-xl font-semibold text-gray-900">Join a Trip</h2>
+        <p className="mb-4 text-sm text-gray-600">
+          Enter the invite code shared by the trip owner to join their trip.
+        </p>
+
+        {error && (
+          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700">
+              Invite Code
+            </label>
+            <input
+              id="inviteCode"
+              type="text"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              required
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 font-mono shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="abc123xyz0"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !inviteCode.trim()}
+              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {loading ? 'Joining...' : 'Join Trip'}
             </button>
           </div>
         </form>

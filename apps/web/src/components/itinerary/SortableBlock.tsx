@@ -35,7 +35,7 @@ function formatTime(time: string | null): string {
   return `${displayHour}:${minutes} ${ampm}`;
 }
 
-export function SortableBlock({ block }: { block: BlockData }) {
+export function SortableBlock({ block, onDelete }: { block: BlockData; onDelete?: (blockId: string) => void }) {
   const {
     attributes,
     listeners,
@@ -93,17 +93,30 @@ export function SortableBlock({ block }: { block: BlockData }) {
             </p>
           )}
 
-          {/* Footer: category badge + cost */}
-          <div className="mt-2 flex items-center gap-2">
-            <span
-              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${colors.bg} ${colors.text}`}
-            >
-              {block.category}
-            </span>
-            {block.estimatedCost != null && block.estimatedCost > 0 && (
-              <span className="text-xs text-gray-500">
-                {block.currency} {block.estimatedCost.toLocaleString()}
+          {/* Footer: category badge + cost + delete */}
+          <div className="mt-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span
+                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${colors.bg} ${colors.text}`}
+              >
+                {block.category}
               </span>
+              {block.estimatedCost != null && block.estimatedCost > 0 && (
+                <span className="text-xs text-gray-500">
+                  {block.currency} {block.estimatedCost.toLocaleString()}
+                </span>
+              )}
+            </div>
+            {onDelete && (
+              <button
+                onClick={() => onDelete(block.id)}
+                className="rounded p-1 text-gray-300 hover:bg-red-50 hover:text-red-500 transition"
+                aria-label={`Delete ${block.title}`}
+              >
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
             )}
           </div>
         </div>
