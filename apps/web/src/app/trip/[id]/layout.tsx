@@ -24,6 +24,15 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
       <header className="border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition"
+              title="Back to dashboard"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </Link>
             <Link href="/dashboard" className="text-xl font-bold text-indigo-600">
               Trip Planner
             </Link>
