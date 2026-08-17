@@ -16,6 +16,8 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { DayColumn } from './DayColumn';
 import { AddActivityModal } from './AddActivityModal';
 import type { BlockData } from './SortableBlock';
+import { useSocket, ConnectionStatus } from '../../hooks/useSocket';
+import { useTripSync } from '../../hooks/useTripSync';
 
 interface DayData {
   id: string;
@@ -43,6 +45,7 @@ export function ItineraryBoard() {
     useSensor(KeyboardSensor)
   );
 
+  // Fetch days via REST (initial load + resync on reconnect)
   const fetchDays = useCallback(async () => {
     if (!token) return;
 
@@ -67,6 +70,20 @@ export function ItineraryBoard() {
     fetchDays();
   }, [fetchDays]);
 
+  // Socket connection with auto-reconnect + resync
+  const { socket, status } = useSocket({
+    tripId,
+    token,
+    onReconnect: fetchDays, // Resync state after reconnection
+  });
+
+  // Real-time block sync + mutation functions
+  const { createBlock, updateBlock, moveBlock, deleteBlock } = useTripSync({
+    socket,
+    days,
+    setDays,
+  });
+
   function findDayContainingBlock(blockId: string): DayData | undefined {
     return days.find((day) => day.blocks.some((b) => b.id === blockId));
   }
@@ -89,8 +106,6 @@ export function ItineraryBoard() {
     }
     if (!targetDay) return;
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-
     if (sourceDay.id === targetDay.id) {
       // Reorder within the same day
       const oldIndex = sourceDay.blocks.findIndex((b) => b.id === activeBlockId);
@@ -98,28 +113,17 @@ export function ItineraryBoard() {
       if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
 
       const newBlocks = arrayMove(sourceDay.blocks, oldIndex, newIndex);
-      const newBlockIds = newBlocks.map((b) => b.id);
 
-      // Optimistic update
+      // Optimistic update for reorder
       setDays((prev) =>
         prev.map((d) => (d.id === sourceDay.id ? { ...d, blocks: newBlocks } : d))
       );
 
-      try {
-        const res = await fetch(`${API_URL}/api/trips/${tripId}/blocks/reorder`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ dayId: sourceDay.id, blockIds: newBlockIds }),
-        });
-        if (!res.ok) {
-          console.error('Reorder failed:', res.status, await res.text());
-          fetchDays();
-        }
-      } catch {
-        // Revert on error
+      // Use socket to emit move for the dragged block to its new position
+      const targetPosition = newIndex + 1;
+      const result = await moveBlock(activeBlockId, sourceDay.id, targetPosition);
+      if (!result.ok) {
+        // Revert on failure by re-fetching
         fetchDays();
       }
     } else {
@@ -131,68 +135,15 @@ export function ItineraryBoard() {
       const overBlockIndex = targetDay.blocks.findIndex((b) => b.id === overId);
       const targetPosition = overBlockIndex >= 0 ? overBlockIndex + 1 : targetDay.blocks.length + 1;
 
-      // Optimistic update
-      const newSourceBlocks = sourceDay.blocks.filter((b) => b.id !== activeBlockId);
-      const newTargetBlocks = [...targetDay.blocks];
-      newTargetBlocks.splice(targetPosition - 1, 0, { ...block, dayId: targetDay.id });
-
-      setDays((prev) =>
-        prev.map((d) => {
-          if (d.id === sourceDay.id) return { ...d, blocks: newSourceBlocks };
-          if (d.id === targetDay!.id) return { ...d, blocks: newTargetBlocks };
-          return d;
-        })
-      );
-
-      try {
-        const res = await fetch(`${API_URL}/api/trips/${tripId}/blocks/move`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            blockId: activeBlockId,
-            targetDayId: targetDay.id,
-            targetPosition,
-          }),
-        });
-        if (!res.ok) {
-          console.error('Move failed:', res.status, await res.text());
-          fetchDays();
-        }
-      } catch {
-        // Revert on error
+      const result = await moveBlock(activeBlockId, targetDay.id, targetPosition);
+      if (!result.ok) {
         fetchDays();
       }
     }
   }
 
   async function handleDeleteBlock(blockId: string) {
-    if (!token) return;
-
-    // Optimistic: remove from local state
-    setDays((prev) =>
-      prev.map((d) => ({
-        ...d,
-        blocks: d.blocks.filter((b) => b.id !== blockId),
-      }))
-    );
-
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-      const res = await fetch(`${API_URL}/api/trips/${tripId}/blocks/${blockId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) {
-        // Revert on error
-        fetchDays();
-      }
-    } catch {
-      fetchDays();
-    }
+    await deleteBlock(blockId);
   }
 
   if (loading) {
@@ -223,6 +174,20 @@ export function ItineraryBoard() {
 
   return (
     <>
+      {/* Connection status indicator */}
+      {status === 'reconnecting' && (
+        <div className="mb-3 flex items-center gap-2 rounded-lg bg-yellow-50 px-3 py-2 text-sm text-yellow-700">
+          <div className="h-2 w-2 animate-pulse rounded-full bg-yellow-500" />
+          Reconnecting...
+        </div>
+      )}
+      {status === 'disconnected' && (
+        <div className="mb-3 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          <div className="h-2 w-2 rounded-full bg-red-500" />
+          Disconnected — changes may not sync
+        </div>
+      )}
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -243,7 +208,7 @@ export function ItineraryBoard() {
         </div>
       </DndContext>
 
-      {/* Add Activity Modal */}
+      {/* Add Activity Modal — now uses socket-based createBlock */}
       {addModalDayId && token && (
         <AddActivityModal
           dayId={addModalDayId}
@@ -252,8 +217,8 @@ export function ItineraryBoard() {
           onClose={() => setAddModalDayId(null)}
           onCreated={() => {
             setAddModalDayId(null);
-            fetchDays();
           }}
+          createBlock={createBlock}
         />
       )}
     </>

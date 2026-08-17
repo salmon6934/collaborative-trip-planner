@@ -9,9 +9,18 @@ interface AddActivityModalProps {
   token: string;
   onClose: () => void;
   onCreated: () => void;
+  createBlock?: (input: {
+    dayId: string;
+    title: string;
+    category: string;
+    startTime?: string;
+    endTime?: string;
+    locationName?: string;
+    estimatedCost?: number;
+  }) => Promise<{ ok: boolean; error?: string }>;
 }
 
-export function AddActivityModal({ dayId, tripId, token, onClose, onCreated }: AddActivityModalProps) {
+export function AddActivityModal({ dayId, tripId, token, onClose, onCreated, createBlock }: AddActivityModalProps) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<ActivityCategory>('activity');
   const [startTime, setStartTime] = useState('');
@@ -27,33 +36,42 @@ export function AddActivityModal({ dayId, tripId, token, onClose, onCreated }: A
     setLoading(true);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-      const body: Record<string, unknown> = {
+      const input: Record<string, unknown> = {
         dayId,
         title,
         category,
       };
 
-      if (startTime) body.startTime = startTime;
-      if (endTime) body.endTime = endTime;
-      if (locationName) body.locationName = locationName;
-      if (estimatedCost) body.estimatedCost = parseFloat(estimatedCost);
+      if (startTime) input.startTime = startTime;
+      if (endTime) input.endTime = endTime;
+      if (locationName) input.locationName = locationName;
+      if (estimatedCost) input.estimatedCost = parseFloat(estimatedCost);
 
-      const res = await fetch(`${API_URL}/api/trips/${tripId}/blocks`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
+      // Use socket-based createBlock if available, else fallback to REST
+      if (createBlock) {
+        const result = await createBlock(input as any);
+        if (!result.ok) {
+          throw new Error(result.error || 'Failed to create activity');
+        }
+        onCreated();
+      } else {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+        const res = await fetch(`${API_URL}/api/trips/${tripId}/blocks`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(input),
+        });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || 'Failed to create activity');
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || 'Failed to create activity');
+        }
+
+        onCreated();
       }
-
-      onCreated();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create activity');
     } finally {
