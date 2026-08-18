@@ -61,6 +61,9 @@ export function initializeSocketServer(
   io.on('connection', (socket) => {
     const userId = socket.data.userId;
 
+    // Join user-specific room for personal notifications
+    socket.join(`user:${userId}`);
+
     // Client joins a trip room
     socket.on('join:trip', (tripId: string) => {
       if (!tripId || typeof tripId !== 'string') {
@@ -93,3 +96,5 @@ export function initializeSocketServer(
 
   return io;
 }
+
+

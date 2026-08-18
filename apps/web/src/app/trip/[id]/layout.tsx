@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { UserMenu } from '@/components/UserMenu';
+import { NotificationBell } from '@/components/NotificationBell';
 
 const tabs = [
   { name: 'Itinerary', href: '' },
@@ -37,7 +38,10 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
               Trip Planner
             </Link>
           </div>
-          <UserMenu />
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <UserMenu />
+          </div>
         </div>
       </header>
 

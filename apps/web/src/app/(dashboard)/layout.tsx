@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { UserMenu } from '@/components/UserMenu';
+import { NotificationBell } from '@/components/NotificationBell';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,7 +11,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Link href="/dashboard" className="text-xl font-bold text-indigo-600">
             Trip Planner
           </Link>
-          <UserMenu />
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <UserMenu />
+          </div>
         </div>
       </header>
 

@@ -46,3 +46,6 @@ docker-compose.override.yml
 
 # Progress log (personal reference)
 PROGRESS.md
+
+# Reference docs
+VITAP_Connect_details.md

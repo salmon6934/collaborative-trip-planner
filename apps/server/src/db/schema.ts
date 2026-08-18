@@ -171,6 +171,25 @@ export const expenseSplits = pgTable('expense_splits', {
   isSettled: boolean('is_settled').default(false).notNull(),
 });
 
+// ─── Notifications ───────────────────────────────────────────────────────────
+
+export const notifications = pgTable('notifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tripId: uuid('trip_id')
+    .references(() => trips.id, { onDelete: 'cascade' })
+    .notNull(),
+  userId: uuid('user_id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  type: text('type', {
+    enum: ['block_created', 'block_moved', 'block_deleted', 'member_joined'],
+  }).notNull(),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  isRead: boolean('is_read').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // ─── Activity Log ────────────────────────────────────────────────────────────
 
 export const activityLog = pgTable('activity_log', {

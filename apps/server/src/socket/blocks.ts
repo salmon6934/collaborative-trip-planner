@@ -15,6 +15,8 @@ import {
 import { db } from '../db/index.js';
 import { activityBlocks } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { checkSocketRateLimit } from '../middleware/rate-limit.js';
+import { notifyTripMembers } from '../services/notification.service.js';
 
 /**
  * Registers real-time block event handlers on a socket connection.
@@ -35,6 +37,12 @@ export function registerBlockHandlers(io: SocketIOServer, socket: Socket) {
         return;
       }
 
+      // Rate limit check
+      if (!checkSocketRateLimit(userId)) {
+        callback?.({ error: 'RATE_LIMIT_EXCEEDED', message: 'Too many mutations, please slow down' });
+        return;
+      }
+
       // Validate input
       const parsed = createBlockSchema.safeParse(data);
       if (!parsed.success) {
@@ -52,6 +60,20 @@ export function registerBlockHandlers(io: SocketIOServer, socket: Socket) {
 
       // Broadcast to room excluding sender
       socket.to(`trip:${tripId}`).emit('block:created', { block, userId });
+
+      // Create notifications for other trip members
+      const notifications = await notifyTripMembers(
+        tripId,
+        userId,
+        'block_created',
+        'New activity added',
+        `"${block.title}" was added to the itinerary`
+      );
+
+      // Emit real-time notification to each recipient's user room
+      for (const notif of notifications) {
+        io.to(`user:${notif.userId}`).emit('notification:new', notif);
+      }
     } catch (error) {
       console.error('block:create error:', error);
       callback?.({ error: 'INTERNAL_ERROR', message: 'Failed to create block' });
@@ -67,6 +89,12 @@ export function registerBlockHandlers(io: SocketIOServer, socket: Socket) {
       const tripId = socket.data.tripId;
       if (!tripId) {
         callback?.({ error: 'NOT_IN_TRIP', message: 'You must join a trip first' });
+        return;
+      }
+
+      // Rate limit check
+      if (!checkSocketRateLimit(userId)) {
+        callback?.({ error: 'RATE_LIMIT_EXCEEDED', message: 'Too many mutations, please slow down' });
         return;
       }
 
@@ -139,6 +167,12 @@ export function registerBlockHandlers(io: SocketIOServer, socket: Socket) {
         return;
       }
 
+      // Rate limit check
+      if (!checkSocketRateLimit(userId)) {
+        callback?.({ error: 'RATE_LIMIT_EXCEEDED', message: 'Too many mutations, please slow down' });
+        return;
+      }
+
       // Validate input
       const parsed = moveBlockSchema.safeParse(data);
       if (!parsed.success) {
@@ -160,6 +194,20 @@ export function registerBlockHandlers(io: SocketIOServer, socket: Socket) {
 
       // Broadcast to room excluding sender
       socket.to(`trip:${tripId}`).emit('block:moved', { block, userId });
+
+      // Create notifications for other trip members
+      const notifications = await notifyTripMembers(
+        tripId,
+        userId,
+        'block_moved',
+        'Activity moved',
+        `"${block.title}" was moved in the itinerary`
+      );
+
+      // Emit real-time notification to each recipient's user room
+      for (const notif of notifications) {
+        io.to(`user:${notif.userId}`).emit('notification:new', notif);
+      }
     } catch (error) {
       console.error('block:move error:', error);
       callback?.({ error: 'INTERNAL_ERROR', message: 'Failed to move block' });
@@ -174,6 +222,12 @@ export function registerBlockHandlers(io: SocketIOServer, socket: Socket) {
       const tripId = socket.data.tripId;
       if (!tripId) {
         callback?.({ error: 'NOT_IN_TRIP', message: 'You must join a trip first' });
+        return;
+      }
+
+      // Rate limit check
+      if (!checkSocketRateLimit(userId)) {
+        callback?.({ error: 'RATE_LIMIT_EXCEEDED', message: 'Too many mutations, please slow down' });
         return;
       }
 
@@ -196,6 +250,20 @@ export function registerBlockHandlers(io: SocketIOServer, socket: Socket) {
 
       // Broadcast to room excluding sender
       socket.to(`trip:${tripId}`).emit('block:deleted', { blockId: block.id, userId });
+
+      // Create notifications for other trip members
+      const notifications = await notifyTripMembers(
+        tripId,
+        userId,
+        'block_deleted',
+        'Activity removed',
+        `"${block.title}" was removed from the itinerary`
+      );
+
+      // Emit real-time notification to each recipient's user room
+      for (const notif of notifications) {
+        io.to(`user:${notif.userId}`).emit('notification:new', notif);
+      }
     } catch (error) {
       console.error('block:delete error:', error);
       callback?.({ error: 'INTERNAL_ERROR', message: 'Failed to delete block' });

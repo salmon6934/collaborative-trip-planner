@@ -1,10 +1,13 @@
 import { createServer } from 'http';
 import express from 'express';
 import cors from 'cors';
-import type { ApiError } from '@trip-planner/shared';
+import helmet from 'helmet';
 import authRouter from './routes/auth.js';
 import tripsRouter from './routes/trips.js';
+import notificationsRouter from './routes/notifications.js';
 import { initializeSocketServer } from './socket/index.js';
+import { setIoInstance } from './socket/io-instance.js';
+import { authRateLimiter, apiRateLimiter } from './middleware/rate-limit.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -13,9 +16,26 @@ const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 // Create HTTP server (required for Socket.io to attach)
 const httpServer = createServer(app);
 
-// Middleware
-app.use(cors());
+// Security headers via Helmet
+app.use(helmet());
+app.use((_req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+});
+
+// CORS configuration
+const FRONTEND_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+app.use(
+  cors({
+    origin: process.env.NODE_ENV === 'production' ? FRONTEND_URL : '*',
+    credentials: true,
+  })
+);
+
 app.use(express.json());
+
+// General API rate limiter
+app.use('/api', apiRateLimiter);
 
 // Health check route
 app.get('/api/health', (_req, res) => {
@@ -25,12 +45,14 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-// Routes
-app.use('/api/auth', authRouter);
+// Routes — auth gets stricter rate limiting
+app.use('/api/auth', authRateLimiter, authRouter);
 app.use('/api/trips', tripsRouter);
+app.use('/api/notifications', notificationsRouter);
 
 // Initialize Socket.io with Redis adapter
 const io = initializeSocketServer(httpServer, REDIS_URL);
+setIoInstance(io);
 
 // Start server using httpServer instead of app.listen
 httpServer.listen(PORT, () => {

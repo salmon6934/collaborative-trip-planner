@@ -24,7 +24,9 @@ import {
   removeMember,
 } from '../services/trip.service.js';
 import { getDaysWithBlocks, createBlock, updateBlock, deleteBlock, moveBlock, reorderBlocks } from '../services/itinerary.service.js';
+import { notifyTripMembers } from '../services/notification.service.js';
 import { ErrorCodes } from '@trip-planner/shared';
+import { getIoInstance } from '../socket/io-instance.js';
 
 const router = Router();
 
@@ -61,7 +63,26 @@ router.post('/join', validate(joinTripSchema) as RequestHandler, async (req: Req
       }
     }
 
-    res.status(200).json({ trip: (result as any).trip });
+    const trip = (result as any).trip;
+
+    // Notify existing members that someone joined
+    try {
+      const notifications = await notifyTripMembers(
+        trip.id,
+        userId,
+        'member_joined',
+        'New member joined',
+        `A new member joined "${trip.title}"`
+      );
+      for (const notif of notifications) {
+        getIoInstance().to(`user:${notif.userId}`).emit('notification:new', notif);
+      }
+    } catch (e) {
+      // Don't fail the join if notification fails
+      console.error('Failed to send join notifications:', e);
+    }
+
+    res.status(200).json({ trip });
   } catch (error) {
     console.error('Join trip error:', error);
     res.status(500).json({
@@ -222,7 +243,26 @@ router.post('/:id/join', validate(joinTripSchema) as RequestHandler, async (req:
       }
     }
 
-    res.status(200).json({ trip: (result as any).trip });
+    const trip = (result as any).trip;
+
+    // Notify existing members that someone joined
+    try {
+      const notifications = await notifyTripMembers(
+        trip.id,
+        userId,
+        'member_joined',
+        'New member joined',
+        `A new member joined "${trip.title}"`
+      );
+      for (const notif of notifications) {
+        getIoInstance().to(`user:${notif.userId}`).emit('notification:new', notif);
+      }
+    } catch (e) {
+      // Don't fail the join if notification fails
+      console.error('Failed to send join notifications:', e);
+    }
+
+    res.status(200).json({ trip });
   } catch (error) {
     console.error('Join trip error:', error);
     res.status(500).json({
