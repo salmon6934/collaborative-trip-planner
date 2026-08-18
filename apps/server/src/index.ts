@@ -24,11 +24,9 @@ app.use((_req, res, next) => {
 });
 
 // CORS configuration
-const FRONTEND_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
 app.use(
   cors({
-    origin: process.env.NODE_ENV === 'production' ? FRONTEND_URL : '*',
-    credentials: true,
+    origin: '*',
   })
 );
 
