@@ -21,7 +21,7 @@ export interface Notification {
 /**
  * Hook for managing in-app notifications.
  * Connects to user-specific Socket.io room and listens for real-time notifications.
- * Provides unread count, notification list, and mark-as-read actions.
+ * Provides unread count, notification list, mark-as-read actions, and mute toggle.
  */
 export function useNotifications() {
   const { data: session } = useSession();
@@ -29,7 +29,22 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [muted, setMuted] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('notifications_muted') === 'true';
+    }
+    return false;
+  });
   const socketRef = useRef<Socket | null>(null);
+
+  // Toggle mute state
+  const toggleMute = useCallback(() => {
+    setMuted((prev) => {
+      const next = !prev;
+      localStorage.setItem('notifications_muted', String(next));
+      return next;
+    });
+  }, []);
 
   // Fetch unread count from API
   const fetchUnreadCount = useCallback(async () => {
@@ -117,18 +132,20 @@ export function useNotifications() {
       setNotifications((prev) => [notification, ...prev]);
       setUnreadCount((prev) => prev + 1);
 
-      // Show toast
-      toast(notification.title, {
-        description: notification.message,
-        duration: 5000,
-      });
+      // Show toast only if not muted
+      if (!muted) {
+        toast(notification.title, {
+          description: notification.message,
+          duration: 5000,
+        });
+      }
     });
 
     return () => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [token]);
+  }, [token, muted]);
 
   // Fetch initial data
   useEffect(() => {
@@ -140,6 +157,8 @@ export function useNotifications() {
     notifications,
     unreadCount,
     loading,
+    muted,
+    toggleMute,
     markAsRead,
     markAllAsRead,
     refetch: fetchNotifications,

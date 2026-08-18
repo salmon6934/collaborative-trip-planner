@@ -10,12 +10,15 @@ export default function TripSettingsPage() {
   const { data: session } = useSession();
   const tripId = params.id as string;
   const token = (session as any)?.accessToken as string | undefined;
+  const userId = (session as any)?.userId as string | undefined;
 
   const [deleting, setDeleting] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [copied, setCopied] = useState(false);
   const [loadingTrip, setLoadingTrip] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     async function fetchTrip() {
@@ -28,6 +31,7 @@ export default function TripSettingsPage() {
         if (res.ok) {
           const data = await res.json();
           setInviteCode(data.trip.inviteCode);
+          setIsOwner(data.trip.createdBy === userId);
         }
       } catch {
         // Silently fail — invite code just won't show
@@ -36,7 +40,7 @@ export default function TripSettingsPage() {
       }
     }
     fetchTrip();
-  }, [token, tripId]);
+  }, [token, tripId, userId]);
 
   async function handleCopyInviteCode() {
     const inviteLink = `${window.location.origin}/join/${inviteCode}`;
@@ -78,6 +82,36 @@ export default function TripSettingsPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete trip');
       setDeleting(false);
+    }
+  }
+
+  async function handleLeave() {
+    if (!token || !userId) return;
+
+    const confirmed = window.confirm(
+      'Are you sure you want to leave this trip? You will lose access to the itinerary, votes, and expenses.'
+    );
+    if (!confirmed) return;
+
+    setLeaving(true);
+    setError('');
+
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const res = await fetch(`${API_URL}/api/trips/${tripId}/members/${userId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to leave trip');
+      }
+
+      router.push('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to leave trip');
+      setLeaving(false);
     }
   }
 
@@ -135,21 +169,38 @@ export default function TripSettingsPage() {
       {/* Danger Zone */}
       <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6">
         <h3 className="text-lg font-semibold text-red-900">Danger Zone</h3>
-        <p className="mt-1 text-sm text-red-700">
-          Deleting a trip is permanent. All days, activities, votes, and expenses will be removed.
-        </p>
 
         {error && (
           <div className="mt-3 rounded-lg bg-red-100 p-3 text-sm text-red-800">{error}</div>
         )}
 
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="mt-4 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-50"
-        >
-          {deleting ? 'Deleting...' : 'Delete This Trip'}
-        </button>
+        {isOwner ? (
+          <>
+            <p className="mt-1 text-sm text-red-700">
+              Deleting a trip is permanent. All days, activities, votes, and expenses will be removed.
+            </p>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="mt-4 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-50"
+            >
+              {deleting ? 'Deleting...' : 'Delete This Trip'}
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="mt-1 text-sm text-red-700">
+              Leaving a trip will remove your access to the itinerary, votes, and expenses.
+            </p>
+            <button
+              onClick={handleLeave}
+              disabled={leaving}
+              className="mt-4 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-50"
+            >
+              {leaving ? 'Leaving...' : 'Leave This Trip'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

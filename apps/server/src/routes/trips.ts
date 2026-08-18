@@ -331,12 +331,29 @@ router.put('/:id/members/:uid', validate(updateMemberRoleSchema) as RequestHandl
 
 /**
  * DELETE /api/trips/:id/members/:uid
- * Remove a member from a trip. Owner only.
+ * Remove a member from a trip.
+ * - Owner can remove any non-owner member.
+ * - Any member can remove themselves (leave trip), except the owner.
  */
-router.delete('/:id/members/:uid', requireRole('owner') as RequestHandler, async (req: Request, res: Response) => {
+router.delete('/:id/members/:uid', requireMember() as RequestHandler, async (req: Request, res: Response) => {
   try {
     const tripId = req.params.id as string;
     const targetUserId = req.params.uid as string;
+    const { userId } = req.auth!;
+
+    // Self-leave: any non-owner member can remove themselves
+    const isSelfLeave = userId === targetUserId;
+
+    if (!isSelfLeave) {
+      // Only owner can remove other members
+      if (req.memberRole !== 'owner') {
+        res.status(403).json({
+          code: ErrorCodes.TRIP_PERMISSION_DENIED,
+          message: 'Only the trip owner can remove other members',
+        });
+        return;
+      }
+    }
 
     const result = await removeMember(tripId, targetUserId);
 
@@ -355,7 +372,7 @@ router.delete('/:id/members/:uid', requireRole('owner') as RequestHandler, async
       return;
     }
 
-    res.status(200).json({ message: 'Member removed successfully' });
+    res.status(200).json({ message: isSelfLeave ? 'Left trip successfully' : 'Member removed successfully' });
   } catch (error) {
     console.error('Remove member error:', error);
     res.status(500).json({

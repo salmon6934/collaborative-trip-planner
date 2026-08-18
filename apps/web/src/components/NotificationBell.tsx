@@ -42,7 +42,7 @@ function notificationIcon(type: Notification['type']): string {
  * Shows recent notifications, allows marking as read, and navigating to relevant trips.
  */
 export function NotificationBell() {
-  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, loading, muted, toggleMute, markAsRead, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -150,6 +150,31 @@ export function NotificationBell() {
                 </button>
               ))
             )}
+          </div>
+
+          {/* Footer — Mute toggle */}
+          <div className="border-t border-gray-100 px-4 py-2.5">
+            <button
+              onClick={toggleMute}
+              className="flex w-full items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-700"
+            >
+              {muted ? (
+                <>
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                  </svg>
+                  Unmute notifications
+                </>
+              ) : (
+                <>
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  </svg>
+                  Mute notifications
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
