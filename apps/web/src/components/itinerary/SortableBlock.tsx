@@ -26,7 +26,6 @@ const categoryColors: Record<ActivityCategory, { bg: string; text: string; borde
 
 function formatTime(time: string | null): string {
   if (!time) return '';
-  // Handle HH:MM or HH:MM:SS format
   const parts = time.split(':');
   const hours = parseInt(parts[0], 10);
   const minutes = parts[1];

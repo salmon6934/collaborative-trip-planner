@@ -16,7 +16,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { DayColumn } from './DayColumn';
 import { AddActivityModal } from './AddActivityModal';
 import type { BlockData } from './SortableBlock';
-import { useSocket, ConnectionStatus } from '../../hooks/useSocket';
+import { useSocket } from '../../hooks/useSocket';
 import { useTripSync } from '../../hooks/useTripSync';
 
 interface DayData {
@@ -74,7 +74,7 @@ export function ItineraryBoard() {
   const { socket, status } = useSocket({
     tripId,
     token,
-    onReconnect: fetchDays, // Resync state after reconnection
+    onReconnect: fetchDays,
   });
 
   // Real-time block sync + mutation functions
@@ -98,40 +98,32 @@ export function ItineraryBoard() {
     const sourceDay = findDayContainingBlock(activeBlockId);
     if (!sourceDay) return;
 
-    // Determine the target day: either the block's day or the droppable day itself
     let targetDay = findDayContainingBlock(overId);
     if (!targetDay) {
-      // The over element is a day column (droppable), not a block
       targetDay = days.find((d) => d.id === overId);
     }
     if (!targetDay) return;
 
     if (sourceDay.id === targetDay.id) {
-      // Reorder within the same day
       const oldIndex = sourceDay.blocks.findIndex((b) => b.id === activeBlockId);
       const newIndex = sourceDay.blocks.findIndex((b) => b.id === overId);
       if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
 
       const newBlocks = arrayMove(sourceDay.blocks, oldIndex, newIndex);
 
-      // Optimistic update for reorder
       setDays((prev) =>
         prev.map((d) => (d.id === sourceDay.id ? { ...d, blocks: newBlocks } : d))
       );
 
-      // Use socket to emit move for the dragged block to its new position
       const targetPosition = newIndex + 1;
       const result = await moveBlock(activeBlockId, sourceDay.id, targetPosition);
       if (!result.ok) {
-        // Revert on failure by re-fetching
         fetchDays();
       }
     } else {
-      // Move to a different day
       const block = sourceDay.blocks.find((b) => b.id === activeBlockId);
       if (!block) return;
 
-      // Determine target position
       const overBlockIndex = targetDay.blocks.findIndex((b) => b.id === overId);
       const targetPosition = overBlockIndex >= 0 ? overBlockIndex + 1 : targetDay.blocks.length + 1;
 
@@ -208,7 +200,7 @@ export function ItineraryBoard() {
         </div>
       </DndContext>
 
-      {/* Add Activity Modal — now uses socket-based createBlock */}
+      {/* Add Activity Modal */}
       {addModalDayId && token && (
         <AddActivityModal
           dayId={addModalDayId}

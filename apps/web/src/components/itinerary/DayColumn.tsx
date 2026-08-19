@@ -51,7 +51,11 @@ export function DayColumn({ dayId, dayNumber, date, blocks, onAddActivity, onDel
       >
         <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
           {blocks.map((block) => (
-            <SortableBlock key={block.id} block={block} onDelete={onDeleteBlock} />
+            <SortableBlock
+              key={block.id}
+              block={block}
+              onDelete={onDeleteBlock}
+            />
           ))}
         </SortableContext>
 

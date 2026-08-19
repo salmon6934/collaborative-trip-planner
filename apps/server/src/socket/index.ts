@@ -3,8 +3,13 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import { Server as HttpServer } from 'http';
 import { Redis } from 'ioredis';
 import jwt from 'jsonwebtoken';
+import { eq } from 'drizzle-orm';
 import { JWT_SECRET, AuthPayload } from '../middleware/auth.js';
 import { registerBlockHandlers } from './blocks.js';
+import { registerPresenceHandlers } from './presence.js';
+import * as presenceService from '../services/presence.service.js';
+import { db } from '../db/index.js';
+import { users } from '../db/schema.js';
 
 /**
  * Initializes Socket.io server attached to the given HTTP server.
@@ -65,20 +70,59 @@ export function initializeSocketServer(
     socket.join(`user:${userId}`);
 
     // Client joins a trip room
-    socket.on('join:trip', (tripId: string) => {
+    socket.on('join:trip', async (tripId: string) => {
       if (!tripId || typeof tripId !== 'string') {
         return;
       }
       socket.join(`trip:${tripId}`);
       socket.data.tripId = tripId;
+
+      // Fetch user name and avatar from DB for presence
+      let userName = socket.data.email || 'Unknown';
+      let avatarUrl: string | null = null;
+      try {
+        const [user] = await db
+          .select({ name: users.name, avatarUrl: users.avatarUrl })
+          .from(users)
+          .where(eq(users.id, userId));
+        if (user) {
+          userName = user.name;
+          avatarUrl = user.avatarUrl;
+        }
+      } catch (err) {
+        console.error('Failed to fetch user for presence:', err);
+      }
+
+      // Store name on socket data for later use
+      socket.data.userName = userName;
+      socket.data.avatarUrl = avatarUrl;
+
+      // Register presence in Redis
+      await presenceService.join(tripId, userId, userName, avatarUrl);
+
+      // Broadcast join to others in the room
+      socket.to(`trip:${tripId}`).emit('presence:join', {
+        userId,
+        userName,
+        avatarUrl,
+      });
+
+      // Send current online list to the joiner
+      const onlineMembers = await presenceService.getOnlineMembers(tripId);
+      socket.emit('presence:online-list', onlineMembers);
     });
 
     // Client explicitly leaves a trip room
-    socket.on('leave:trip', (tripId: string) => {
+    socket.on('leave:trip', async (tripId: string) => {
       if (!tripId || typeof tripId !== 'string') {
         return;
       }
       socket.leave(`trip:${tripId}`);
+
+      // Remove presence from Redis and broadcast leave
+      await presenceService.leave(tripId, userId);
+      socket.to(`trip:${tripId}`).emit('presence:leave', { userId });
+
       if (socket.data.tripId === tripId) {
         socket.data.tripId = undefined;
       }
@@ -87,10 +131,18 @@ export function initializeSocketServer(
     // Register block event handlers for real-time itinerary collaboration
     registerBlockHandlers(io, socket);
 
-    // On disconnect, cleanup is automatic (socket.io removes from all rooms)
-    socket.on('disconnect', () => {
+    // Register presence event handlers (heartbeat, editing, cursor)
+    registerPresenceHandlers(io, socket);
+
+    // On disconnect, cleanup presence and rooms
+    socket.on('disconnect', async () => {
       // Socket.io automatically removes the socket from all rooms on disconnect.
-      // Additional presence cleanup can be added here later.
+      // Clean up presence in Redis
+      const tripId = socket.data.tripId as string | undefined;
+      if (tripId) {
+        await presenceService.leave(tripId, userId);
+        socket.to(`trip:${tripId}`).emit('presence:leave', { userId });
+      }
     });
   });
 

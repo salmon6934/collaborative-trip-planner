@@ -1,9 +1,14 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { UserMenu } from '@/components/UserMenu';
 import { NotificationBell } from '@/components/NotificationBell';
+import { MembersPanel, MembersButton, MemberWithStatus } from '@/components/presence/OnlineAvatars';
+import { usePresence } from '@/hooks/usePresence';
+import { useSocket } from '@/hooks/useSocket';
 
 const tabs = [
   { name: 'Itinerary', href: '' },
@@ -13,11 +18,79 @@ const tabs = [
   { name: 'Settings', href: '/settings' },
 ];
 
+interface TripMember {
+  id: string;
+  userId: string;
+  role: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+  };
+}
+
 export default function TripLayout({ children }: { children: React.ReactNode }) {
+  const { data: session } = useSession();
   const params = useParams();
   const pathname = usePathname();
   const tripId = params.id as string;
   const basePath = `/trip/${tripId}`;
+  const token = (session as any)?.accessToken as string | undefined;
+  const currentUserId = (session as any)?.user?.id as string | undefined;
+
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [tripMembers, setTripMembers] = useState<TripMember[]>([]);
+
+  // Socket connection for presence (shared across all tabs)
+  const { socket } = useSocket({ tripId, token });
+
+  // Online presence tracking
+  const { onlineMembers } = usePresence({ socket, tripId, currentUserId });
+
+  // Fetch all trip members from REST API
+  const fetchMembers = useCallback(async () => {
+    if (!token || !tripId) return;
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const res = await fetch(`${API_URL}/api/trips/${tripId}/members`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTripMembers(data.members || []);
+      }
+    } catch (err) {
+      // Silently fail — members panel is non-critical
+    }
+  }, [token, tripId]);
+
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
+
+  // Merge trip members with online status
+  const onlineUserIds = new Set(onlineMembers.map((m) => m.userId));
+  const editingUserIds = new Set(
+    onlineMembers.filter((m) => m.editingBlockId !== null).map((m) => m.userId)
+  );
+  const membersWithStatus: MemberWithStatus[] = tripMembers.map((m) => ({
+    userId: m.userId,
+    userName: m.user.name,
+    avatarUrl: m.user.avatarUrl,
+    role: m.role,
+    isOnline: onlineUserIds.has(m.userId),
+    isEditing: editingUserIds.has(m.userId),
+  }));
+
+  // Sort: online first, then alphabetical
+  membersWithStatus.sort((a, b) => {
+    if (a.isOnline && !b.isOnline) return -1;
+    if (!a.isOnline && b.isOnline) return 1;
+    return a.userName.localeCompare(b.userName);
+  });
+
+  const onlineCount = membersWithStatus.filter((m) => m.isOnline).length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -39,6 +112,10 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
             </Link>
           </div>
           <div className="flex items-center gap-3">
+            <MembersButton
+              onlineCount={onlineCount}
+              onClick={() => setMembersOpen((prev) => !prev)}
+            />
             <NotificationBell />
             <UserMenu />
           </div>
@@ -51,7 +128,6 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
           <div className="-mb-px flex space-x-8 overflow-x-auto">
             {tabs.map((tab) => {
               const tabHref = `${basePath}${tab.href}`;
-              // Active if the pathname matches exactly (for root) or starts with the tab path
               const isActive =
                 tab.href === ''
                   ? pathname === basePath || pathname === `${basePath}/itinerary`
@@ -79,6 +155,13 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {children}
       </main>
+
+      {/* Members slide-in panel (visible across all tabs) */}
+      <MembersPanel
+        members={membersWithStatus}
+        isOpen={membersOpen}
+        onClose={() => setMembersOpen(false)}
+      />
     </div>
   );
 }
