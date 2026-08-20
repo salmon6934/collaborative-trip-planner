@@ -22,12 +22,9 @@ interface TripMember {
   id: string;
   userId: string;
   role: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    avatarUrl: string | null;
-  };
+  userName: string;
+  userEmail: string;
+  userAvatarUrl: string | null;
 }
 
 export default function TripLayout({ children }: { children: React.ReactNode }) {
@@ -76,8 +73,8 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
   );
   const membersWithStatus: MemberWithStatus[] = tripMembers.map((m) => ({
     userId: m.userId,
-    userName: m.user.name,
-    avatarUrl: m.user.avatarUrl,
+    userName: m.userName,
+    avatarUrl: m.userAvatarUrl,
     role: m.role,
     isOnline: onlineUserIds.has(m.userId),
     isEditing: editingUserIds.has(m.userId),
