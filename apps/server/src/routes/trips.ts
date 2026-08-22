@@ -27,6 +27,7 @@ import { getDaysWithBlocks, createBlock, updateBlock, deleteBlock, moveBlock, re
 import { notifyTripMembers } from '../services/notification.service.js';
 import { ErrorCodes } from '@trip-planner/shared';
 import { getIoInstance } from '../socket/io-instance.js';
+import { tripVoteRoutes } from './votes.js';
 
 const router = Router();
 
@@ -527,5 +528,9 @@ router.delete('/:id/blocks/:blockId', requireRole('owner', 'editor') as RequestH
     });
   }
 });
+
+// ─── Vote Routes ─────────────────────────────────────────────────────────────
+
+router.use('/:id/votes', tripVoteRoutes);
 
 export default router;

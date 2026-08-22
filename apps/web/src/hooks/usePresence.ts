@@ -99,5 +99,25 @@ export function usePresence({ socket, tripId, currentUserId }: UsePresenceOption
     };
   }, [socket, tripId]);
 
+  // Re-join presence when tab becomes visible again (browsers throttle timers in background tabs)
+  useEffect(() => {
+    if (!socket || !tripId) return;
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        // Immediately refresh heartbeat (if key still exists in Redis)
+        socket!.emit('presence:heartbeat');
+        // Re-join in case the key expired while tab was in background
+        socket!.emit('join:trip', tripId);
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [socket, tripId]);
+
   return { onlineMembers };
 }

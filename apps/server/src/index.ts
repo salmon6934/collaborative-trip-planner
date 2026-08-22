@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import authRouter from './routes/auth.js';
 import tripsRouter from './routes/trips.js';
+import votesRouter from './routes/votes.js';
 import notificationsRouter from './routes/notifications.js';
 import { initializeSocketServer } from './socket/index.js';
 import { setIoInstance } from './socket/io-instance.js';
@@ -46,6 +47,7 @@ app.get('/api/health', (_req, res) => {
 // Routes — auth gets stricter rate limiting
 app.use('/api/auth', authRateLimiter, authRouter);
 app.use('/api/trips', tripsRouter);
+app.use('/api/votes', votesRouter);
 app.use('/api/notifications', notificationsRouter);
 
 // Initialize Socket.io with Redis adapter

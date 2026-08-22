@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { JWT_SECRET, AuthPayload } from '../middleware/auth.js';
 import { registerBlockHandlers } from './blocks.js';
 import { registerPresenceHandlers } from './presence.js';
+import { registerVoteHandlers } from './votes.js';
 import * as presenceService from '../services/presence.service.js';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
@@ -133,6 +134,9 @@ export function initializeSocketServer(
 
     // Register presence event handlers (heartbeat, editing, cursor)
     registerPresenceHandlers(io, socket);
+
+    // Register vote event handlers for real-time polling
+    registerVoteHandlers(io, socket);
 
     // On disconnect, cleanup presence and rooms
     socket.on('disconnect', async () => {
