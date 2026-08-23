@@ -7,8 +7,11 @@ import { useSession } from 'next-auth/react';
 import { UserMenu } from '@/components/UserMenu';
 import { NotificationBell } from '@/components/NotificationBell';
 import { MembersPanel, MembersButton, MemberWithStatus } from '@/components/presence/OnlineAvatars';
+import { ActivityFeedPanel } from '@/components/ActivityFeedPanel';
+import { ActivityFeedButton } from '@/components/ActivityFeedButton';
 import { usePresence } from '@/hooks/usePresence';
 import { useSocket } from '@/hooks/useSocket';
+import { useActivityFeed } from '@/hooks/useActivityFeed';
 
 const tabs = [
   { name: 'Itinerary', href: '' },
@@ -37,6 +40,7 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
   const currentUserId = (session as any)?.user?.id as string | undefined;
 
   const [membersOpen, setMembersOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
   const [tripMembers, setTripMembers] = useState<TripMember[]>([]);
 
   // Socket connection for presence (shared across all tabs)
@@ -44,6 +48,10 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
 
   // Online presence tracking
   const { onlineMembers } = usePresence({ socket, tripId, currentUserId });
+
+  // Activity feed
+  const { activities, unreadCount: activityUnread, loading: activityLoading, loadMore, hasMore, markAsSeen } =
+    useActivityFeed({ tripId, token, socket, currentUserId });
 
   // Fetch all trip members from REST API
   const fetchMembers = useCallback(async () => {
@@ -109,6 +117,15 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
             </Link>
           </div>
           <div className="flex items-center gap-3">
+            <ActivityFeedButton
+              unreadCount={activityUnread}
+              onClick={() => {
+                setActivityOpen((prev) => {
+                  if (!prev) markAsSeen();
+                  return !prev;
+                });
+              }}
+            />
             <MembersButton
               onlineCount={onlineCount}
               onClick={() => setMembersOpen((prev) => !prev)}
@@ -158,6 +175,16 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
         members={membersWithStatus}
         isOpen={membersOpen}
         onClose={() => setMembersOpen(false)}
+      />
+
+      {/* Activity feed slide-in panel (visible across all tabs) */}
+      <ActivityFeedPanel
+        activities={activities}
+        isOpen={activityOpen}
+        loading={activityLoading}
+        hasMore={hasMore}
+        onClose={() => setActivityOpen(false)}
+        onLoadMore={loadMore}
       />
     </div>
   );

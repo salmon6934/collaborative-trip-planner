@@ -20,12 +20,17 @@ export function initializeSocketServer(
   httpServer: HttpServer,
   redisUrl: string
 ): SocketIOServer {
+  const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
+    : undefined; // undefined = allow all origins
+
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+      origin: allowedOrigins || '*',
       methods: ['GET', 'POST'],
-      credentials: true,
+      credentials: !!allowedOrigins, // Only set credentials when origins are explicit
     },
+    transports: ['polling', 'websocket'],
   });
 
   // Setup Redis adapter for pub/sub across multiple server instances
