@@ -83,9 +83,15 @@ export function useVotes({ socket, tripId, token, currentUserId }: UseVotesOptio
 
     function handleVoteCreated(data: { vote: Poll; options: any[]; userId: string }) {
       const newPoll: Poll = { ...data.vote, options: data.options };
-      setPolls((prev) => [newPoll, ...prev]);
+      // Skip if already in state (e.g., creator added it optimistically)
+      setPolls((prev) => {
+        if (prev.some((p) => p.id === newPoll.id)) return prev;
+        return [newPoll, ...prev];
+      });
       setTallies((prev) => ({ ...prev, [newPoll.id]: [] }));
-      toast.info('New poll created', { description: newPoll.question });
+      if (data.userId !== currentUserId) {
+        toast.info('New poll created', { description: newPoll.question });
+      }
     }
 
     function handleVoteCast(data: { voteId: string; optionId: string; userId: string; tallies: Tally[] }) {
