@@ -1,6 +1,7 @@
 import { eq, asc, and, desc } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { days, activityBlocks, expenses } from '../db/schema.js';
+import { logAction } from './activity-feed.service.js';
 
 // ─── Day Generation ──────────────────────────────────────────────────────────
 
@@ -143,6 +144,11 @@ export async function createBlock(dayId: string, tripId: string, input: CreateBl
     })
     .returning();
 
+  // Log activity (non-blocking)
+  logAction(tripId, createdBy, 'created', 'activity_block', block.id, {
+    title: input.title,
+  }).catch(() => {});
+
   return block;
 }
 
@@ -150,7 +156,7 @@ export async function createBlock(dayId: string, tripId: string, input: CreateBl
  * Partially updates an activity block's fields.
  * Returns null if the block is not found.
  */
-export async function updateBlock(blockId: string, input: UpdateBlockInput) {
+export async function updateBlock(blockId: string, input: UpdateBlockInput, userId?: string) {
   const updateData: Record<string, any> = {};
 
   if (input.title !== undefined) updateData.title = input.title;
@@ -181,6 +187,13 @@ export async function updateBlock(blockId: string, input: UpdateBlockInput) {
     .where(eq(activityBlocks.id, blockId))
     .returning();
 
+  if (updated && userId) {
+    // Log activity (non-blocking)
+    logAction(updated.tripId, userId, 'updated', 'activity_block', blockId, {
+      title: updated.title,
+    }).catch(() => {});
+  }
+
   return updated ?? null;
 }
 
@@ -191,13 +204,15 @@ export async function updateBlock(blockId: string, input: UpdateBlockInput) {
  * Updates the block's dayId and position, and sets updatedAt.
  * Returns null if the block is not found.
  */
-export async function moveBlock(blockId: string, targetDayId: string, targetPosition: number) {
+export async function moveBlock(blockId: string, targetDayId: string, targetPosition: number, userId?: string) {
   const [existing] = await db
     .select()
     .from(activityBlocks)
     .where(eq(activityBlocks.id, blockId));
 
   if (!existing) return null;
+
+  const sourceDayId = existing.dayId;
 
   const [updated] = await db
     .update(activityBlocks)
@@ -208,6 +223,15 @@ export async function moveBlock(blockId: string, targetDayId: string, targetPosi
     })
     .where(eq(activityBlocks.id, blockId))
     .returning();
+
+  if (updated && userId && sourceDayId !== targetDayId) {
+    // Log activity (non-blocking) — only log move when day actually changed
+    logAction(updated.tripId, userId, 'moved', 'activity_block', blockId, {
+      title: updated.title,
+      fromDay: sourceDayId,
+      toDay: targetDayId,
+    }).catch(() => {});
+  }
 
   return updated ?? null;
 }
@@ -244,7 +268,7 @@ export async function reorderBlocks(dayId: string, blockIds: string[]) {
  * by setting their activityBlockId to null.
  * Returns null if the block is not found.
  */
-export async function deleteBlock(blockId: string) {
+export async function deleteBlock(blockId: string, userId?: string) {
   // Check if block exists
   const [existing] = await db
     .select()
@@ -264,6 +288,13 @@ export async function deleteBlock(blockId: string) {
     .delete(activityBlocks)
     .where(eq(activityBlocks.id, blockId))
     .returning();
+
+  if (deleted && userId) {
+    // Log activity (non-blocking)
+    logAction(deleted.tripId, userId, 'deleted', 'activity_block', blockId, {
+      title: deleted.title,
+    }).catch(() => {});
+  }
 
   return deleted ?? null;
 }

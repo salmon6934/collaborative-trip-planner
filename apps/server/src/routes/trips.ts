@@ -25,6 +25,7 @@ import {
 } from '../services/trip.service.js';
 import { getDaysWithBlocks, createBlock, updateBlock, deleteBlock, moveBlock, reorderBlocks } from '../services/itinerary.service.js';
 import { notifyTripMembers } from '../services/notification.service.js';
+import { getRecentActions, formatDescription, getActivityFeed } from '../services/activity-feed.service.js';
 import { ErrorCodes } from '@trip-planner/shared';
 import { getIoInstance } from '../socket/io-instance.js';
 import { tripVoteRoutes } from './votes.js';
@@ -436,8 +437,9 @@ router.post('/:id/blocks', requireRole('owner', 'editor') as RequestHandler, val
 router.put('/:id/blocks/move', requireRole('owner', 'editor') as RequestHandler, validate(moveBlockSchema) as RequestHandler, async (req: Request, res: Response) => {
   try {
     const { blockId, targetDayId, targetPosition } = req.body;
+    const { userId } = req.auth!;
 
-    const block = await moveBlock(blockId, targetDayId, targetPosition);
+    const block = await moveBlock(blockId, targetDayId, targetPosition, userId);
     if (!block) {
       res.status(404).json({
         code: 'BLOCK_NOT_FOUND',
@@ -482,8 +484,9 @@ router.put('/:id/blocks/reorder', requireRole('owner', 'editor') as RequestHandl
 router.put('/:id/blocks/:blockId', requireRole('owner', 'editor') as RequestHandler, validate(updateBlockSchema) as RequestHandler, async (req: Request, res: Response) => {
   try {
     const blockId = req.params.blockId as string;
+    const { userId } = req.auth!;
 
-    const block = await updateBlock(blockId, req.body);
+    const block = await updateBlock(blockId, req.body, userId);
     if (!block) {
       res.status(404).json({
         code: 'BLOCK_NOT_FOUND',
@@ -509,8 +512,9 @@ router.put('/:id/blocks/:blockId', requireRole('owner', 'editor') as RequestHand
 router.delete('/:id/blocks/:blockId', requireRole('owner', 'editor') as RequestHandler, async (req: Request, res: Response) => {
   try {
     const blockId = req.params.blockId as string;
+    const { userId } = req.auth!;
 
-    const block = await deleteBlock(blockId);
+    const block = await deleteBlock(blockId, userId);
     if (!block) {
       res.status(404).json({
         code: 'BLOCK_NOT_FOUND',
@@ -532,5 +536,28 @@ router.delete('/:id/blocks/:blockId', requireRole('owner', 'editor') as RequestH
 // ─── Vote Routes ─────────────────────────────────────────────────────────────
 
 router.use('/:id/votes', tripVoteRoutes);
+
+// ─── Activity Feed ───────────────────────────────────────────────────────────
+
+/**
+ * GET /api/trips/:id/activity?limit=20&offset=0
+ * Get the activity feed for a trip. User must be a member.
+ */
+router.get('/:id/activity', requireMember() as RequestHandler, async (req: Request, res: Response) => {
+  try {
+    const tripId = req.params.id as string;
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    const activities = await getActivityFeed(tripId, limit, offset);
+    res.status(200).json({ activities });
+  } catch (error) {
+    console.error('Get activity feed error:', error);
+    res.status(500).json({
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred',
+    });
+  }
+});
 
 export default router;

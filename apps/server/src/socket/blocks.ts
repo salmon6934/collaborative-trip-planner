@@ -139,7 +139,7 @@ export function registerBlockHandlers(io: SocketIOServer, socket: Socket) {
       }
 
       // Persist update
-      const block = await updateBlock(blockId, parsed.data as UpdateBlockInput);
+      const block = await updateBlock(blockId, parsed.data as UpdateBlockInput, userId);
       if (!block) {
         callback?.({ error: 'BLOCK_NOT_FOUND', message: 'Block not found' });
         return;
@@ -183,7 +183,7 @@ export function registerBlockHandlers(io: SocketIOServer, socket: Socket) {
       const { blockId, targetDayId, targetPosition } = parsed.data;
 
       // Persist move
-      const block = await moveBlock(blockId, targetDayId, targetPosition);
+      const block = await moveBlock(blockId, targetDayId, targetPosition, userId);
       if (!block) {
         callback?.({ error: 'BLOCK_NOT_FOUND', message: 'Block not found' });
         return;
@@ -239,7 +239,7 @@ export function registerBlockHandlers(io: SocketIOServer, socket: Socket) {
       }
 
       // Persist deletion
-      const block = await deleteBlock(blockId);
+      const block = await deleteBlock(blockId, userId);
       if (!block) {
         callback?.({ error: 'BLOCK_NOT_FOUND', message: 'Block not found' });
         return;
