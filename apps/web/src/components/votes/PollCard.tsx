@@ -34,7 +34,9 @@ interface PollCardProps {
   userVoteOptionId: string | null;
   onVote: (optionId: string) => void;
   onResolve: () => void;
+  onDelete?: () => void;
   canResolve: boolean;
+  canDelete: boolean;
 }
 
 export function PollCard({
@@ -44,7 +46,9 @@ export function PollCard({
   userVoteOptionId,
   onVote,
   onResolve,
+  onDelete,
   canResolve,
+  canDelete,
 }: PollCardProps) {
   const totalVotes = tallies.reduce((sum, t) => sum + t.count, 0);
   const hasVoted = userVoteOptionId !== null;
@@ -144,14 +148,25 @@ export function PollCard({
           {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}
         </span>
 
-        {canResolve && !poll.isResolved && (
-          <button
-            onClick={onResolve}
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 transition"
-          >
-            Resolve
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {canDelete && (
+            <button
+              onClick={onDelete}
+              className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition"
+              title="Delete poll"
+            >
+              Delete
+            </button>
+          )}
+          {canResolve && !poll.isResolved && (
+            <button
+              onClick={onResolve}
+              className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 transition"
+            >
+              Resolve
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

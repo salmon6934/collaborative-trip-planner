@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useSocket } from '@/hooks/useSocket';
@@ -25,12 +25,38 @@ export default function TripVotesPage() {
     createPoll,
     castVote,
     resolvePoll,
+    deletePoll,
   } = useVotes({ socket, tripId, token, currentUserId });
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [resolvingPoll, setResolvingPoll] = useState<Poll | null>(null);
   const [isResolving, setIsResolving] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  // Fetch current user's trip role
+  const fetchUserRole = useCallback(async () => {
+    if (!token || !tripId || !currentUserId) return;
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const res = await fetch(`${API_URL}/api/trips/${tripId}/members`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const me = (data.members || []).find((m: any) => m.userId === currentUserId);
+        if (me) setUserRole(me.role);
+      }
+    } catch {
+      // Silently fail
+    }
+  }, [token, tripId, currentUserId]);
+
+  useEffect(() => {
+    fetchUserRole();
+  }, [fetchUserRole]);
+
+  const isOwner = userRole === 'owner';
 
   const activePolls = polls.filter((p) => !p.isResolved);
   const resolvedPolls = polls.filter((p) => p.isResolved);
@@ -114,7 +140,9 @@ export default function TripVotesPage() {
                 userVoteOptionId={userVotes[poll.id] || null}
                 onVote={(optionId) => castVote(poll.id, optionId)}
                 onResolve={() => setResolvingPoll(poll)}
+                onDelete={() => deletePoll(poll.id)}
                 canResolve={canResolvePoll(poll)}
+                canDelete={isOwner}
               />
             ))}
           </div>
@@ -137,7 +165,9 @@ export default function TripVotesPage() {
                 userVoteOptionId={userVotes[poll.id] || null}
                 onVote={() => {}}
                 onResolve={() => {}}
+                onDelete={() => deletePoll(poll.id)}
                 canResolve={false}
+                canDelete={isOwner}
               />
             ))}
           </div>

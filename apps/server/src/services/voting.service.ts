@@ -212,6 +212,27 @@ export async function addWinnerToItinerary(voteId: string, dayId: string) {
   return { block };
 }
 
+// ─── Delete Poll ─────────────────────────────────────────────────────────────
+
+/**
+ * Deletes a poll and all associated options/responses (cascade).
+ * Only the trip owner should be able to delete polls.
+ */
+export async function deletePoll(voteId: string) {
+  const [poll] = await db
+    .select()
+    .from(votes)
+    .where(eq(votes.id, voteId));
+
+  if (!poll) {
+    return { error: 'VOTE_NOT_FOUND' };
+  }
+
+  await db.delete(votes).where(eq(votes.id, voteId));
+
+  return { deleted: true, tripId: poll.tripId };
+}
+
 // ─── List Polls ──────────────────────────────────────────────────────────────
 
 /**

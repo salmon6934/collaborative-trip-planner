@@ -6,6 +6,7 @@ import {
   createPoll,
   castVote,
   resolvePoll,
+  deletePoll,
   listPolls,
   getTallies,
   addWinnerToItinerary,
@@ -70,6 +71,38 @@ tripVoteRoutes.get(
       res.status(200).json({ votes: polls });
     } catch (error) {
       console.error('List polls error:', error);
+      res.status(500).json({
+        code: 'INTERNAL_ERROR',
+        message: 'An unexpected error occurred',
+      });
+    }
+  }
+);
+
+/**
+ * DELETE /api/trips/:id/votes/:voteId
+ * Delete a poll. Owner role required.
+ */
+tripVoteRoutes.delete(
+  '/:voteId',
+  requireRole('owner') as RequestHandler,
+  async (req: Request, res: Response) => {
+    try {
+      const voteId = req.params.voteId as string;
+
+      const result = await deletePoll(voteId);
+
+      if ('error' in result) {
+        res.status(404).json({
+          code: 'VOTE_NOT_FOUND',
+          message: 'Poll not found',
+        });
+        return;
+      }
+
+      res.status(200).json({ message: 'Poll deleted successfully' });
+    } catch (error) {
+      console.error('Delete poll error:', error);
       res.status(500).json({
         code: 'INTERNAL_ERROR',
         message: 'An unexpected error occurred',

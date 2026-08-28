@@ -21,6 +21,7 @@ interface UseVotesReturn {
   createPoll: (question: string, options: { title: string; description?: string }[]) => Promise<void>;
   castVote: (voteId: string, optionId: string) => Promise<void>;
   resolvePoll: (voteId: string, winningOptionId: string) => Promise<void>;
+  deletePoll: (voteId: string) => Promise<void>;
 }
 
 /**
@@ -218,6 +219,35 @@ export function useVotes({ socket, tripId, token, currentUserId }: UseVotesOptio
     [token, socket]
   );
 
+  // Delete a poll (owner only)
+  const deletePoll = useCallback(
+    async (voteId: string) => {
+      if (!token || !tripId) return;
+
+      const res = await apiFetch(`/api/trips/${tripId}/votes/${voteId}`, {
+        method: 'DELETE',
+        token,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.message || 'Failed to delete poll');
+        return;
+      }
+
+      // Remove from local state
+      setPolls((prev) => prev.filter((p) => p.id !== voteId));
+      setTallies((prev) => {
+        const next = { ...prev };
+        delete next[voteId];
+        return next;
+      });
+
+      toast.success('Poll deleted');
+    },
+    [token, tripId]
+  );
+
   return {
     polls,
     tallies,
@@ -226,5 +256,6 @@ export function useVotes({ socket, tripId, token, currentUserId }: UseVotesOptio
     createPoll,
     castVote,
     resolvePoll,
+    deletePoll,
   };
 }

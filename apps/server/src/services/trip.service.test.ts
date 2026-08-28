@@ -126,7 +126,7 @@ describe('Trip Service', () => {
       mockFrom.mockReturnValueOnce({ where: vi.fn(() => ({ limit: vi.fn().mockResolvedValue([fakeMember]) })) });
 
       const result = await joinTrip('user-2', 'validcode');
-      expect(result).toEqual({ error: ErrorCodes.MEMBER_ALREADY_EXISTS });
+      expect(result).toEqual({ error: ErrorCodes.MEMBER_ALREADY_EXISTS, trip: fakeTrip });
     });
 
     it('should add user as editor when invite code is valid and no prior membership', async () => {

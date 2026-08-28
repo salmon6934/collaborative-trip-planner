@@ -1,12 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="rounded-xl bg-white p-8 shadow-lg" />}>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Only allow relative callback URLs to prevent open-redirects.
+  const rawCallback = searchParams.get('callbackUrl');
+  const callbackUrl = rawCallback && rawCallback.startsWith('/') ? rawCallback : '/dashboard';
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,7 +55,7 @@ export default function SignupPage() {
       if (result?.error) {
         setError('Account created but sign-in failed. Please log in manually.');
       } else {
-        router.push('/dashboard');
+        router.push(callbackUrl);
       }
     } catch {
       setError('Something went wrong. Please try again.');
@@ -120,7 +132,10 @@ export default function SignupPage() {
 
       <div className="mt-6 text-center text-sm text-gray-600">
         Already have an account?{' '}
-        <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+        <Link
+          href={rawCallback ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/login'}
+          className="font-medium text-indigo-600 hover:text-indigo-500"
+        >
           Sign in
         </Link>
       </div>

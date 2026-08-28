@@ -60,6 +60,8 @@ router.post('/join', validate(joinTripSchema) as RequestHandler, async (req: Req
         res.status(409).json({
           code: ErrorCodes.MEMBER_ALREADY_EXISTS,
           message: 'You are already a member of this trip',
+          // Include the trip so clients can redirect to the existing trip view.
+          trip: (result as any).trip ?? null,
         });
         return;
       }
@@ -240,6 +242,8 @@ router.post('/:id/join', validate(joinTripSchema) as RequestHandler, async (req:
         res.status(409).json({
           code: ErrorCodes.MEMBER_ALREADY_EXISTS,
           message: 'You are already a member of this trip',
+          // Include the trip so clients can redirect to the existing trip view.
+          trip: (result as any).trip ?? null,
         });
         return;
       }

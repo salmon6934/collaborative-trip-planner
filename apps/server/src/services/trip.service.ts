@@ -145,7 +145,9 @@ export async function joinTrip(userId: string, inviteCode: string) {
     .limit(1);
 
   if (existing) {
-    return { error: ErrorCodes.MEMBER_ALREADY_EXISTS };
+    // Already a member — return the trip so the caller can redirect to it
+    // without creating a duplicate membership.
+    return { error: ErrorCodes.MEMBER_ALREADY_EXISTS, trip };
   }
 
   // Add user as editor
