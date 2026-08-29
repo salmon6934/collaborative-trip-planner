@@ -1,8 +1,89 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { COMMON_TIMEZONES, suggestTimezoneFromDestination, timezoneAbbreviation } from '@/lib/format';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+interface Member {
+  id: string;
+  userId: string;
+  role: string;
+  userName: string;
+  userEmail: string;
+  userAvatarUrl: string | null;
+}
+
+interface TripDetails {
+  id: string;
+  title: string;
+  destination: string;
+  createdBy: string;
+  inviteCode: string;
+  coverImageUrl: string | null;
+  timezone: string | null;
+}
+
+const avatarColors = [
+  'bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500',
+  'bg-cyan-500', 'bg-violet-500', 'bg-fuchsia-500', 'bg-teal-500',
+];
+function avatarColor(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  return avatarColors[Math.abs(hash) % avatarColors.length];
+}
+
+// ─── Confirmation dialog ──────────────────────────────────────────────────────
+
+function ConfirmDialog({
+  title,
+  message,
+  confirmLabel,
+  danger,
+  onConfirm,
+  onCancel,
+  busy,
+}: {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  danger?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  busy?: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <p className="mt-2 text-sm text-gray-600">{message}</p>
+        <div className="mt-5 flex gap-3">
+          <button
+            onClick={onCancel}
+            disabled={busy}
+            className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={busy}
+            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-sm disabled:opacity-50 ${
+              danger ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'
+            }`}
+          >
+            {busy ? 'Working…' : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Settings Page ─────────────────────────────────────────────────────────────
 
 export default function TripSettingsPage() {
   const params = useParams();
@@ -10,74 +91,176 @@ export default function TripSettingsPage() {
   const { data: session } = useSession();
   const tripId = params.id as string;
   const token = (session as any)?.accessToken as string | undefined;
-  const userId = (session as any)?.userId as string | undefined;
+  const userId = session?.user?.id as string | undefined;
+
+  const [trip, setTrip] = useState<TripDetails | null>(null);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loadingTrip, setLoadingTrip] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
 
   const [deleting, setDeleting] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
   const [copied, setCopied] = useState(false);
-  const [loadingTrip, setLoadingTrip] = useState(true);
-  const [isOwner, setIsOwner] = useState(false);
 
-  useEffect(() => {
-    async function fetchTrip() {
-      if (!token) return;
-      try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-        const res = await fetch(`${API_URL}/api/trips/${tripId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setInviteCode(data.trip.inviteCode);
-          setIsOwner(data.trip.createdBy === userId);
-        }
-      } catch {
-        // Silently fail — invite code just won't show
-      } finally {
-        setLoadingTrip(false);
+  // Pending confirmation for member actions
+  const [pendingAction, setPendingAction] = useState<
+    | { kind: 'role'; member: Member; newRole: 'editor' | 'viewer' }
+    | { kind: 'remove'; member: Member }
+    | null
+  >(null);
+  const [actionBusy, setActionBusy] = useState(false);
+
+  // Cover image + timezone form state
+  const [coverUrl, setCoverUrl] = useState('');
+  const [timezone, setTimezone] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+
+  const fetchTrip = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/api/trips/${tripId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const t: TripDetails = data.trip;
+        setTrip(t);
+        setIsOwner(t.createdBy === userId);
+        setCoverUrl(t.coverImageUrl || '');
+        setTimezone(t.timezone || '');
       }
+    } catch {
+      /* invite code / settings just won't show */
+    } finally {
+      setLoadingTrip(false);
     }
-    fetchTrip();
   }, [token, tripId, userId]);
 
-  async function handleCopyInviteCode() {
-    const inviteLink = `${window.location.origin}/join/${inviteCode}`;
-    await navigator.clipboard.writeText(inviteLink);
+  const fetchMembers = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/api/trips/${tripId}/members`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMembers(data.members || []);
+      }
+    } catch {
+      /* non-critical */
+    }
+  }, [token, tripId]);
+
+  useEffect(() => {
+    fetchTrip();
+    fetchMembers();
+  }, [fetchTrip, fetchMembers]);
+
+  const inviteCode = trip?.inviteCode || '';
+
+  async function handleCopyInviteLink() {
+    await navigator.clipboard.writeText(`${window.location.origin}/join/${inviteCode}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
-
   async function handleCopyCode() {
     await navigator.clipboard.writeText(inviteCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
+  // ─── Member management ───────────────────────────────────────────────────────
+
+  async function confirmMemberAction() {
+    if (!pendingAction || !token) return;
+    setActionBusy(true);
+    setError('');
+    try {
+      if (pendingAction.kind === 'role') {
+        const res = await fetch(
+          `${API_URL}/api/trips/${tripId}/members/${pendingAction.member.userId}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ role: pendingAction.newRole }),
+          }
+        );
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || 'Failed to update role');
+        }
+      } else {
+        const res = await fetch(
+          `${API_URL}/api/trips/${tripId}/members/${pendingAction.member.userId}`,
+          { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || 'Failed to remove member');
+        }
+      }
+      setPendingAction(null);
+      await fetchMembers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Action failed');
+      setPendingAction(null);
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  // ─── Cover image + timezone ──────────────────────────────────────────────────
+
+  async function handleSaveSettings(e: React.FormEvent) {
+    e.preventDefault();
+    if (!token) return;
+    setSavingSettings(true);
+    setSettingsSaved(false);
+    setError('');
+    try {
+      const body: Record<string, unknown> = {
+        coverImageUrl: coverUrl.trim() ? coverUrl.trim() : null,
+        timezone: timezone.trim() ? timezone.trim() : null,
+      };
+      const res = await fetch(`${API_URL}/api/trips/${tripId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to save trip settings');
+      }
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 2500);
+      await fetchTrip();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save settings');
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
+  const suggestedTz = suggestTimezoneFromDestination(trip?.destination);
+
+  // ─── Danger zone ─────────────────────────────────────────────────────────────
+
   async function handleDelete() {
     if (!token) return;
-
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this trip? This action cannot be undone. All days, activities, votes, and expenses will be permanently removed.'
-    );
-    if (!confirmed) return;
-
+    if (!window.confirm('Delete this trip permanently? All days, activities, votes, and expenses will be removed.')) return;
     setDeleting(true);
     setError('');
-
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
       const res = await fetch(`${API_URL}/api/trips/${tripId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         throw new Error(data.message || 'Failed to delete trip');
       }
-
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete trip');
@@ -87,33 +270,30 @@ export default function TripSettingsPage() {
 
   async function handleLeave() {
     if (!token || !userId) return;
-
-    const confirmed = window.confirm(
-      'Are you sure you want to leave this trip? You will lose access to the itinerary, votes, and expenses.'
-    );
-    if (!confirmed) return;
-
+    if (!window.confirm('Leave this trip? You will lose access to the itinerary, votes, and expenses.')) return;
     setLeaving(true);
     setError('');
-
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
       const res = await fetch(`${API_URL}/api/trips/${tripId}/members/${userId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         throw new Error(data.message || 'Failed to leave trip');
       }
-
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to leave trip');
       setLeaving(false);
     }
   }
+
+  const roleBadgeClass: Record<string, string> = {
+    owner: 'bg-indigo-100 text-indigo-700',
+    editor: 'bg-emerald-100 text-emerald-700',
+    viewer: 'bg-gray-100 text-gray-600',
+  };
 
   return (
     <div>
@@ -122,7 +302,153 @@ export default function TripSettingsPage() {
         Manage trip details, members, and invite links.
       </p>
 
-      {/* Invite Section */}
+      {error && (
+        <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
+      )}
+
+      {/* ─── Members ─────────────────────────────────────────────────────── */}
+      <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6">
+        <h3 className="text-lg font-semibold text-gray-900">Members</h3>
+        <p className="mt-1 text-sm text-gray-600">
+          {isOwner
+            ? 'Change roles or remove members. Editors can modify the itinerary; Viewers have read-only access.'
+            : 'Everyone collaborating on this trip.'}
+        </p>
+
+        <div className="mt-4 divide-y divide-gray-100">
+          {members.length === 0 && (
+            <p className="py-4 text-sm text-gray-400">Loading members…</p>
+          )}
+          {members.map((m) => {
+            const isSelf = m.userId === userId;
+            const isMemberOwner = m.role === 'owner';
+            const canManage = isOwner && !isMemberOwner && !isSelf;
+            return (
+              <div key={m.id} className="flex items-center gap-3 py-3">
+                <div
+                  className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${avatarColor(m.userId)}`}
+                >
+                  {m.userAvatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={m.userAvatarUrl} alt={m.userName} className="h-full w-full rounded-full object-cover" />
+                  ) : (
+                    m.userName.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-gray-900">
+                    {m.userName} {isSelf && <span className="text-xs text-gray-400">(you)</span>}
+                  </p>
+                  <p className="truncate text-xs text-gray-500">{m.userEmail}</p>
+                </div>
+
+                {canManage ? (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={m.role}
+                      onChange={(e) =>
+                        setPendingAction({
+                          kind: 'role',
+                          member: m,
+                          newRole: e.target.value as 'editor' | 'viewer',
+                        })
+                      }
+                      className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      aria-label={`Change role for ${m.userName}`}
+                    >
+                      <option value="editor">Editor</option>
+                      <option value="viewer">Viewer</option>
+                    </select>
+                    <button
+                      onClick={() => setPendingAction({ kind: 'remove', member: m })}
+                      className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${roleBadgeClass[m.role] || 'bg-gray-100 text-gray-600'}`}
+                  >
+                    {m.role}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ─── Cover image + timezone ──────────────────────────────────────── */}
+      {isOwner && (
+        <form onSubmit={handleSaveSettings} className="mt-8 rounded-xl border border-gray-200 bg-white p-6">
+          <h3 className="text-lg font-semibold text-gray-900">Trip Appearance</h3>
+          <p className="mt-1 text-sm text-gray-600">
+            Set a cover photo and the destination timezone.
+          </p>
+
+          <div className="mt-4">
+            <label htmlFor="cover-url" className="block text-sm font-medium text-gray-700">
+              Cover Image URL
+            </label>
+            <input
+              id="cover-url"
+              type="url"
+              value={coverUrl}
+              onChange={(e) => setCoverUrl(e.target.value)}
+              placeholder="https://images.example.com/paris.jpg"
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+            {coverUrl.trim() && (
+              <div className="mt-3 h-32 w-full overflow-hidden rounded-lg border border-gray-200">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={coverUrl} alt="Cover preview" className="h-full w-full object-cover" />
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4">
+            <label htmlFor="timezone" className="block text-sm font-medium text-gray-700">
+              Timezone
+            </label>
+            <select
+              id="timezone"
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="">No timezone</option>
+              {COMMON_TIMEZONES.map((tz) => (
+                <option key={tz} value={tz}>
+                  {tz} ({timezoneAbbreviation(tz)})
+                </option>
+              ))}
+            </select>
+            {suggestedTz && suggestedTz !== timezone && (
+              <button
+                type="button"
+                onClick={() => setTimezone(suggestedTz)}
+                className="mt-2 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+              >
+                Suggested for {trip?.destination}: {suggestedTz} — use this
+              </button>
+            )}
+          </div>
+
+          <div className="mt-5 flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={savingSettings}
+              className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {savingSettings ? 'Saving…' : 'Save Appearance'}
+            </button>
+            {settingsSaved && <span className="text-sm text-emerald-600">✓ Saved</span>}
+          </div>
+        </form>
+      )}
+
+      {/* ─── Invite ──────────────────────────────────────────────────────── */}
       <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6">
         <h3 className="text-lg font-semibold text-gray-900">Invite Members</h3>
         <p className="mt-1 text-sm text-gray-600">
@@ -133,7 +459,6 @@ export default function TripSettingsPage() {
           <div className="mt-4 h-10 w-48 animate-pulse rounded-lg bg-gray-100" />
         ) : inviteCode ? (
           <div className="mt-4 space-y-3">
-            {/* Invite code display */}
             <div className="flex items-center gap-3">
               <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm font-medium text-gray-900 select-all">
                 {inviteCode}
@@ -145,10 +470,8 @@ export default function TripSettingsPage() {
                 {copied ? '✓ Copied' : 'Copy Code'}
               </button>
             </div>
-
-            {/* Copy full link */}
             <button
-              onClick={handleCopyInviteCode}
+              onClick={handleCopyInviteLink}
               className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,7 +479,6 @@ export default function TripSettingsPage() {
               </svg>
               {copied ? 'Copied!' : 'Copy Invite Link'}
             </button>
-
             <p className="text-xs text-gray-500">
               Link format: {typeof window !== 'undefined' ? window.location.origin : ''}/join/{inviteCode}
             </p>
@@ -166,14 +488,9 @@ export default function TripSettingsPage() {
         )}
       </div>
 
-      {/* Danger Zone */}
+      {/* ─── Danger Zone ─────────────────────────────────────────────────── */}
       <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6">
         <h3 className="text-lg font-semibold text-red-900">Danger Zone</h3>
-
-        {error && (
-          <div className="mt-3 rounded-lg bg-red-100 p-3 text-sm text-red-800">{error}</div>
-        )}
-
         {isOwner ? (
           <>
             <p className="mt-1 text-sm text-red-700">
@@ -202,6 +519,27 @@ export default function TripSettingsPage() {
           </>
         )}
       </div>
+
+      {/* Confirmation dialog for role change / removal */}
+      {pendingAction && (
+        <ConfirmDialog
+          title={pendingAction.kind === 'role' ? 'Change member role?' : 'Remove member?'}
+          message={
+            pendingAction.kind === 'role'
+              ? `Change ${pendingAction.member.userName}'s role to ${pendingAction.newRole}? ${
+                  pendingAction.newRole === 'viewer'
+                    ? 'They will lose the ability to edit the itinerary.'
+                    : 'They will be able to edit the itinerary.'
+                }`
+              : `Remove ${pendingAction.member.userName} from this trip? They will lose access immediately.`
+          }
+          confirmLabel={pendingAction.kind === 'role' ? 'Change Role' : 'Remove'}
+          danger={pendingAction.kind === 'remove'}
+          busy={actionBusy}
+          onConfirm={confirmMemberAction}
+          onCancel={() => setPendingAction(null)}
+        />
+      )}
     </div>
   );
 }

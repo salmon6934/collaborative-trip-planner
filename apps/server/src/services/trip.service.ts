@@ -19,6 +19,8 @@ interface UpdateTripInput {
   destination?: string;
   startDate?: Date;
   endDate?: Date;
+  coverImageUrl?: string | null;
+  timezone?: string | null;
 }
 
 // ─── Service Methods ─────────────────────────────────────────────────────────
@@ -76,6 +78,8 @@ export async function updateTrip(tripId: string, input: UpdateTripInput) {
   if (input.destination !== undefined) values.destination = input.destination;
   if (input.startDate !== undefined) values.startDate = input.startDate.toISOString().split('T')[0];
   if (input.endDate !== undefined) values.endDate = input.endDate.toISOString().split('T')[0];
+  if (input.coverImageUrl !== undefined) values.coverImageUrl = input.coverImageUrl;
+  if (input.timezone !== undefined) values.timezone = input.timezone;
 
   const [updated] = await db
     .update(trips)
@@ -111,6 +115,8 @@ export async function listUserTrips(userId: string) {
       endDate: trips.endDate,
       createdBy: trips.createdBy,
       inviteCode: trips.inviteCode,
+      coverImageUrl: trips.coverImageUrl,
+      timezone: trips.timezone,
       createdAt: trips.createdAt,
       role: tripMembers.role,
     })

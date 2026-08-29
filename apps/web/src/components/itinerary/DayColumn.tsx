@@ -2,7 +2,8 @@
 
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { SortableBlock, BlockData } from './SortableBlock';
+import { SortableBlock, BlockData, MemberInfo } from './SortableBlock';
+import { formatDayLabel } from '@/lib/format';
 
 interface DayColumnProps {
   dayId: string;
@@ -10,43 +11,71 @@ interface DayColumnProps {
   date: string;
   blocks: BlockData[];
   onAddActivity: (dayId: string) => void;
+  canEdit: boolean;
+  members: Map<string, MemberInfo>;
+  tzAbbrev: string | null;
+  lockedByBlock: Map<string, string>;
+  expandedBlockId: string | null;
+  onToggleExpand: (blockId: string) => void;
+  onEditBlock: (block: BlockData) => void;
   onDeleteBlock: (blockId: string) => void;
+  onDuplicateBlock: (block: BlockData) => void;
+  isMatch: (block: BlockData) => boolean;
+  selectMode: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (blockId: string) => void;
 }
 
-export function DayColumn({ dayId, dayNumber, date, blocks, onAddActivity, onDeleteBlock }: DayColumnProps) {
+export function DayColumn({
+  dayId,
+  dayNumber,
+  date,
+  blocks,
+  onAddActivity,
+  canEdit,
+  members,
+  tzAbbrev,
+  lockedByBlock,
+  expandedBlockId,
+  onToggleExpand,
+  onEditBlock,
+  onDeleteBlock,
+  onDuplicateBlock,
+  isMatch,
+  selectMode,
+  selectedIds,
+  onToggleSelect,
+}: DayColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: dayId });
 
-  const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-
   return (
-    <div className="flex w-72 flex-shrink-0 flex-col rounded-xl border border-gray-200 bg-gray-50">
+    <div
+      id={`day-col-${dayId}`}
+      className="flex w-72 flex-shrink-0 scroll-mt-4 flex-col rounded-xl border border-gray-200 bg-gray-50"
+    >
       {/* Day header */}
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 rounded-t-xl">
+      <div className="flex items-center justify-between rounded-t-xl border-b border-gray-200 bg-white px-4 py-3">
         <div>
           <h3 className="text-sm font-semibold text-gray-900">Day {dayNumber}</h3>
-          <p className="text-xs text-gray-500">{formattedDate}</p>
+          <p className="text-xs text-gray-500">{formatDayLabel(date)}</p>
         </div>
-        <button
-          onClick={() => onAddActivity(dayId)}
-          className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-          aria-label={`Add activity to day ${dayNumber}`}
-        >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => onAddActivity(dayId)}
+            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            aria-label={`Add activity to day ${dayNumber}`}
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Droppable area with blocks */}
       <div
         ref={setNodeRef}
-        className={`flex-1 space-y-2 overflow-y-auto p-3 transition ${
-          isOver ? 'bg-indigo-50' : ''
-        }`}
+        className={`flex-1 space-y-2 overflow-y-auto p-3 transition ${isOver ? 'bg-indigo-50' : ''}`}
         style={{ minHeight: '200px' }}
       >
         <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
@@ -54,15 +83,29 @@ export function DayColumn({ dayId, dayNumber, date, blocks, onAddActivity, onDel
             <SortableBlock
               key={block.id}
               block={block}
+              canEdit={canEdit}
+              members={members}
+              tzAbbrev={tzAbbrev}
+              lockedByName={lockedByBlock.get(block.id) ?? null}
+              expanded={expandedBlockId === block.id}
+              onToggleExpand={onToggleExpand}
+              onEdit={onEditBlock}
               onDelete={onDeleteBlock}
+              onDuplicate={onDuplicateBlock}
+              dimmed={!isMatch(block)}
+              selectMode={selectMode}
+              selected={selectedIds.has(block.id)}
+              onToggleSelect={onToggleSelect}
             />
           ))}
         </SortableContext>
 
         {blocks.length === 0 && !isOver && (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-center text-xs text-gray-400">
-              Drop activities here or click + to add
+          <div className="flex h-full flex-col items-center justify-center gap-2 py-6 text-center">
+            <span className="text-2xl" aria-hidden="true">🗓️</span>
+            <p className="text-xs text-gray-400">
+              Nothing planned yet.
+              {canEdit ? ' Tap + to add an activity.' : ''}
             </p>
           </div>
         )}

@@ -33,6 +33,8 @@ export const trips = pgTable('trips', {
     .references(() => users.id)
     .notNull(),
   inviteCode: text('invite_code').notNull().unique(),
+  coverImageUrl: text('cover_image_url'),
+  timezone: text('timezone'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -87,6 +89,8 @@ export const activityBlocks = pgTable('activity_blocks', {
   createdBy: uuid('created_by')
     .references(() => users.id)
     .notNull(),
+  lastEditedBy: uuid('last_edited_by').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 

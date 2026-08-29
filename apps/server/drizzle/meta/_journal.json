@@ -15,6 +15,20 @@
       "when": 1787044549600,
       "tag": "0001_legal_malcolm_colcord",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787957308409,
+      "tag": "0002_fresh_pyro",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787957375533,
+      "tag": "0003_bright_miek",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,7 @@ interface Trip {
   startDate: string;
   endDate: string;
   role: string;
+  coverImageUrl: string | null;
   createdAt: string;
 }
 
@@ -87,20 +88,36 @@ export default function DashboardPage() {
             <Link
               key={trip.id}
               href={`/trip/${trip.id}`}
-              className="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-indigo-300 hover:shadow-md"
+              className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:border-indigo-300 hover:shadow-md"
             >
-              <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600">
-                {trip.title}
-              </h3>
-              <p className="mt-1 text-sm text-gray-600">{trip.destination}</p>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-xs text-gray-500">
-                  {new Date(trip.startDate).toLocaleDateString()} —{' '}
-                  {new Date(trip.endDate).toLocaleDateString()}
-                </span>
-                <span className="inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
-                  {trip.role}
-                </span>
+              {trip.coverImageUrl ? (
+                <div className="h-28 w-full overflow-hidden bg-gray-100">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={trip.coverImageUrl}
+                    alt=""
+                    className="h-full w-full object-cover transition group-hover:scale-105"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-28 w-full items-center justify-center bg-gradient-to-br from-indigo-400 to-violet-500 text-3xl">
+                  🗺️
+                </div>
+              )}
+              <div className="p-6">
+                <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600">
+                  {trip.title}
+                </h3>
+                <p className="mt-1 text-sm text-gray-600">{trip.destination}</p>
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-xs text-gray-500">
+                    {new Date(trip.startDate).toLocaleDateString()} —{' '}
+                    {new Date(trip.endDate).toLocaleDateString()}
+                  </span>
+                  <span className="inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                    {trip.role}
+                  </span>
+                </div>
               </div>
             </Link>
           ))}

@@ -1,0 +1,1 @@
+ALTER TABLE "activity_blocks" ADD COLUMN "created_at" timestamp DEFAULT now() NOT NULL;

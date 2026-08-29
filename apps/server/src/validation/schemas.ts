@@ -33,6 +33,8 @@ export const updateTripSchema = z.object({
   destination: z.string().min(1).max(200).optional(),
   startDate: dateSchema.optional(),
   endDate: dateSchema.optional(),
+  coverImageUrl: z.string().url().max(2000).nullable().optional(),
+  timezone: z.string().max(100).nullable().optional(),
 });
 
 // Activity block schemas

@@ -180,6 +180,7 @@ export async function updateBlock(blockId: string, input: UpdateBlockInput, user
   }
 
   updateData.updatedAt = new Date();
+  if (userId) updateData.lastEditedBy = userId;
 
   const [updated] = await db
     .update(activityBlocks)

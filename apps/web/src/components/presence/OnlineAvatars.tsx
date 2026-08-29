@@ -1,5 +1,7 @@
 'use client';
 
+import { formatRelativeTime } from '@/lib/format';
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface MemberWithStatus {
@@ -9,6 +11,10 @@ export interface MemberWithStatus {
   role: string;
   isOnline: boolean;
   isEditing: boolean;
+  /** Title of the block this member is currently editing (if any). */
+  editingBlockTitle?: string | null;
+  /** ISO timestamp of when this member was last seen online (for offline members). */
+  lastSeen?: string | null;
 }
 
 interface MembersPanelProps {
@@ -63,11 +69,13 @@ export function MembersPanel({ members, isOpen, onClose }: MembersPanelProps) {
         />
       )}
 
-      {/* Slide-in panel */}
+      {/* Slide-in panel — full-width slide-over on mobile, fixed drawer on larger screens */}
       <div
-        className={`fixed right-0 top-0 z-50 h-full w-80 transform bg-white shadow-xl transition-transform duration-300 ease-in-out ${
+        className={`fixed right-0 top-0 z-50 h-full w-full transform bg-white shadow-xl transition-transform duration-300 ease-in-out sm:w-80 ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
+        role="dialog"
+        aria-label="Members panel"
       >
         {/* Panel header */}
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-4">
@@ -131,10 +139,12 @@ function MemberRow({ member }: { member: MemberWithStatus }) {
   let statusText: string;
   let statusColor: string;
   if (!member.isOnline) {
-    statusText = 'offline';
+    statusText = member.lastSeen ? `Last seen ${formatRelativeTime(member.lastSeen)}` : 'offline';
     statusColor = 'text-gray-400';
   } else if (member.isEditing) {
-    statusText = 'tweaking things';
+    statusText = member.editingBlockTitle
+      ? `Editing: ${member.editingBlockTitle}`
+      : 'tweaking things';
     statusColor = 'text-amber-500';
   } else {
     statusText = 'online';
@@ -160,8 +170,13 @@ function MemberRow({ member }: { member: MemberWithStatus }) {
 
       {/* Name + status */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-900">{member.userName}</p>
-        <p className={`text-xs ${statusColor}`}>{statusText}</p>
+        <div className="flex items-center gap-2">
+          <p className="truncate text-sm font-medium text-gray-900">{member.userName}</p>
+          <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium capitalize text-gray-500">
+            {member.role}
+          </span>
+        </div>
+        <p className={`truncate text-xs ${statusColor}`}>{statusText}</p>
       </div>
 
       {/* Online/offline dot indicator */}

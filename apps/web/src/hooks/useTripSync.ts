@@ -120,6 +120,7 @@ export function useTripSync({ socket, days, setDays }: UseTripSyncOptions) {
       endTime?: string;
       locationName?: string;
       estimatedCost?: number;
+      description?: string;
     }): Promise<{ ok: boolean; error?: string }> => {
       // Generate a temporary ID for the optimistic block
       const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -127,13 +128,19 @@ export function useTripSync({ socket, days, setDays }: UseTripSyncOptions) {
         id: tempId,
         dayId: input.dayId,
         title: input.title,
+        description: input.description || null,
         category: input.category as BlockData['category'],
         startTime: input.startTime || null,
         endTime: input.endTime || null,
         locationName: input.locationName || null,
+        latitude: null,
+        longitude: null,
         estimatedCost: input.estimatedCost ?? null,
         currency: 'INR',
         position: Date.now(), // Will be corrected by server
+        createdBy: '',
+        lastEditedBy: null,
+        updatedAt: new Date().toISOString(),
       };
 
       return applyOptimistic(
@@ -222,5 +229,103 @@ export function useTripSync({ socket, days, setDays }: UseTripSyncOptions) {
     [socket, applyOptimistic],
   );
 
-  return { createBlock, updateBlock, moveBlock, deleteBlock };
+  /**
+   * Conflict-aware edit save. Sends the block's base updatedAt so the server can
+   * apply last-write-wins. On CONFLICT the caller receives the server's current
+   * version so a diff/merge dialog can be shown.
+   */
+  const saveEdit = useCallback(
+    async (
+      blockId: string,
+      updates: Record<string, unknown>,
+      baseUpdatedAt: string | undefined,
+    ): Promise<{ ok: boolean; conflict?: boolean; theirs?: BlockData; error?: string }> => {
+      const response = await emitWithAck('block:update', {
+        blockId,
+        updatedAt: baseUpdatedAt,
+        ...updates,
+      });
+
+      if (response.ok && response.block) {
+        setDays((prev) =>
+          prev.map((day) => ({
+            ...day,
+            blocks: day.blocks.map((b) => (b.id === blockId ? (response.block as BlockData) : b)),
+          })),
+        );
+        return { ok: true };
+      }
+
+      if ((response as any).error === 'CONFLICT') {
+        return { ok: false, conflict: true, theirs: (response as any).block as BlockData };
+      }
+
+      return { ok: false, error: (response as any).error };
+    },
+    [socket, setDays],
+  );
+
+  /**
+   * Forces an update, bypassing the last-write-wins timestamp check ("keep mine").
+   */
+  const forceUpdate = useCallback(
+    async (blockId: string, updates: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> => {
+      const response = await emitWithAck('block:update', { blockId, ...updates });
+      if (response.ok && response.block) {
+        setDays((prev) =>
+          prev.map((day) => ({
+            ...day,
+            blocks: day.blocks.map((b) => (b.id === blockId ? (response.block as BlockData) : b)),
+          })),
+        );
+        return { ok: true };
+      }
+      return { ok: false, error: (response as any).error };
+    },
+    [socket, setDays],
+  );
+
+  /**
+   * Replaces a block in local state with a server-provided version ("keep theirs").
+   */
+  const applyServerBlock = useCallback(
+    (block: BlockData) => {
+      setDays((prev) =>
+        prev.map((day) => ({
+          ...day,
+          blocks: day.blocks.map((b) => (b.id === block.id ? block : b)),
+        })),
+      );
+    },
+    [setDays],
+  );
+
+  /**
+   * Duplicates a block's content into a target day (new id + appended position).
+   */
+  const duplicateBlock = useCallback(
+    async (source: BlockData, targetDayId: string): Promise<{ ok: boolean; error?: string }> => {
+      return createBlock({
+        dayId: targetDayId,
+        title: source.title,
+        category: source.category,
+        startTime: source.startTime || undefined,
+        endTime: source.endTime || undefined,
+        locationName: source.locationName || undefined,
+        estimatedCost: source.estimatedCost ?? undefined,
+      });
+    },
+    [createBlock],
+  );
+
+  return {
+    createBlock,
+    updateBlock,
+    moveBlock,
+    deleteBlock,
+    saveEdit,
+    forceUpdate,
+    applyServerBlock,
+    duplicateBlock,
+  };
 }

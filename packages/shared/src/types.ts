@@ -24,6 +24,8 @@ export interface Trip {
   endDate: Date;
   createdBy: string;
   inviteCode: string;
+  coverImageUrl: string | null;
+  timezone: string | null;
   createdAt: Date;
 }
 
@@ -68,6 +70,8 @@ export interface ActivityBlock {
   currency: string;
   position: number;
   createdBy: string;
+  lastEditedBy: string | null;
+  createdAt: Date;
   updatedAt: Date;
 }
 
