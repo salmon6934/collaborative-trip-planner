@@ -72,7 +72,6 @@ function MiniAvatar({ userId, name, avatarUrl }: { userId: string; name: string;
       className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold text-white ${avatarColor(userId)}`}
     >
       {avatarUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img src={avatarUrl} alt={name} className="h-full w-full rounded-full object-cover" />
       ) : (
         name.charAt(0).toUpperCase()

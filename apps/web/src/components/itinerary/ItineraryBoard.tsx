@@ -261,7 +261,7 @@ export function ItineraryBoard() {
     const movedBlock = sourceDay.blocks.find((b) => b.id === activeBlockId);
     const originalPosition = movedBlock?.position ?? 1;
 
-    let targetDay = findDayContainingBlock(overId) || days.find((d) => d.id === overId);
+    const targetDay = findDayContainingBlock(overId) || days.find((d) => d.id === overId);
     if (!targetDay) return;
 
     if (sourceDay.id === targetDay.id) {

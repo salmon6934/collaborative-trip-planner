@@ -329,7 +329,6 @@ export default function TripSettingsPage() {
                   className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${avatarColor(m.userId)}`}
                 >
                   {m.userAvatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={m.userAvatarUrl} alt={m.userName} className="h-full w-full rounded-full object-cover" />
                   ) : (
                     m.userName.charAt(0).toUpperCase()
@@ -401,7 +400,6 @@ export default function TripSettingsPage() {
             />
             {coverUrl.trim() && (
               <div className="mt-3 h-32 w-full overflow-hidden rounded-lg border border-gray-200">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={coverUrl} alt="Cover preview" className="h-full w-full object-cover" />
               </div>
             )}

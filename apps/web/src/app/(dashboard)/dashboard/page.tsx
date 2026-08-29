@@ -92,7 +92,6 @@ export default function DashboardPage() {
             >
               {trip.coverImageUrl ? (
                 <div className="h-28 w-full overflow-hidden bg-gray-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={trip.coverImageUrl}
                     alt=""

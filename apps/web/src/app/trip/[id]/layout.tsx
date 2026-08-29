@@ -275,7 +275,6 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
                 className="relative -mx-4 mb-4 h-40 overflow-hidden sm:-mx-6 sm:h-48 lg:-mx-8"
                 aria-hidden="true"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={trip.coverImageUrl}
                   alt=""
