@@ -150,14 +150,19 @@ export const expenses = pgTable('expenses', {
     () => activityBlocks.id
   ),
   title: text('title').notNull(),
-  amount: real('amount').notNull(),
+  // Total expense amount stored as integer minor units (e.g. paise/cents).
+  amountMinor: integer('amount_minor').notNull(),
   currency: text('currency').default('INR').notNull(),
+  // Primary payer (single-payer convenience). Per-payer paid shares are
+  // tracked on expense_splits.paid_minor for multi-payer support.
   paidBy: uuid('paid_by')
     .references(() => users.id)
     .notNull(),
   splitType: text('split_type', {
     enum: ['equal', 'custom', 'percentage'],
   }).notNull(),
+  // Soft delete: retained for history, excluded from totals/balances.
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -171,8 +176,31 @@ export const expenseSplits = pgTable('expense_splits', {
   userId: uuid('user_id')
     .references(() => users.id)
     .notNull(),
-  amountOwed: real('amount_owed').notNull(),
-  isSettled: boolean('is_settled').default(false).notNull(),
+  // Each participant carries both an owed share and a paid share, in integer
+  // minor units. sum(owedMinor) == sum(paidMinor) == expense.amountMinor.
+  owedMinor: integer('owed_minor').notNull(),
+  paidMinor: integer('paid_minor').default(0).notNull(),
+});
+
+// ─── Settlements ─────────────────────────────────────────────────────────────
+
+// Settlement payment records replace the per-split is_settled boolean model.
+// A settlement records a payment from one member to another (supports partial
+// settlements). Net balances are derived from paid/owed shares minus settlements.
+export const settlements = pgTable('settlements', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tripId: uuid('trip_id')
+    .references(() => trips.id, { onDelete: 'cascade' })
+    .notNull(),
+  fromUserId: uuid('from_user_id')
+    .references(() => users.id)
+    .notNull(),
+  toUserId: uuid('to_user_id')
+    .references(() => users.id)
+    .notNull(),
+  amountMinor: integer('amount_minor').notNull(),
+  note: text('note'),
+  settledAt: timestamp('settled_at').defaultNow().notNull(),
 });
 
 // ─── Notifications ───────────────────────────────────────────────────────────

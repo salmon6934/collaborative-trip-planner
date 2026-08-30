@@ -138,10 +138,13 @@ export interface Expense {
   tripId: string;
   activityBlockId: string | null;
   title: string;
-  amount: number;
+  /** Total amount in integer minor units (e.g. paise/cents). */
+  amountMinor: number;
   currency: string;
   paidBy: string;
   splitType: SplitType;
+  /** Soft-delete timestamp; null when the expense is active. */
+  deletedAt: Date | null;
   createdAt: Date;
 }
 
@@ -149,20 +152,37 @@ export interface ExpenseSplit {
   id: string;
   expenseId: string;
   userId: string;
-  amountOwed: number;
-  isSettled: boolean;
+  /** Participant's owed share in integer minor units. */
+  owedMinor: number;
+  /** Participant's paid share in integer minor units (0 if not a payer). */
+  paidMinor: number;
+}
+
+/** A recorded settlement payment from one member to another. */
+export interface Settlement {
+  id: string;
+  tripId: string;
+  fromUserId: string;
+  toUserId: string;
+  /** Settled amount in integer minor units. */
+  amountMinor: number;
+  note: string | null;
+  settledAt: Date;
 }
 
 export interface SettlementTransaction {
   from: string;
   to: string;
-  amount: number;
+  /** Suggested transaction amount in integer minor units. */
+  amountMinor: number;
   currency: string;
 }
 
 export interface TripExpenseSummary {
-  totalCost: number;
-  memberShares: { userId: string; share: number }[];
+  /** Trip total in integer minor units. */
+  totalMinor: number;
+  /** Each member's net balance (paid minus owed, adjusted by settlements) in minor units. */
+  memberBalances: { userId: string; balanceMinor: number }[];
   settlements: SettlementTransaction[];
 }
 
@@ -209,5 +229,7 @@ export interface SocketEventMap {
 
   // Expense events
   'expense:created': { expense: Expense; splits: ExpenseSplit[] };
-  'expense:settled': { splitId: string };
+  'expense:updated': { expense: Expense; splits: ExpenseSplit[] };
+  'expense:deleted': { expenseId: string };
+  'expense:settled': { settlement: Settlement };
 }

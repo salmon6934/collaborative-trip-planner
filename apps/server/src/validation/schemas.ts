@@ -87,9 +87,12 @@ export const castVoteSchema = z.object({
 // Expense schemas
 export const splitTypeSchema = z.enum(['equal', 'custom', 'percentage']);
 
+// Money is expressed as integer minor units (e.g. paise/cents) everywhere.
+const minorUnitsSchema = z.number().int('Must be an integer number of minor units');
+
 export const customSplitSchema = z.object({
   userId: uuidSchema,
-  amount: z.number().min(0),
+  owedMinor: minorUnitsSchema.min(0),
 });
 
 export const percentageSplitSchema = z.object({
@@ -97,15 +100,53 @@ export const percentageSplitSchema = z.object({
   percentage: z.number().min(0).max(100),
 });
 
-export const createExpenseSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(200),
-  amount: z.number().positive('Amount must be positive'),
-  currency: z.string().length(3).default('INR'),
-  paidBy: uuidSchema,
-  splitType: splitTypeSchema,
+// A payer contributes a paid share (in minor units) toward the expense total.
+export const payerSchema = z.object({
+  userId: uuidSchema,
+  paidMinor: minorUnitsSchema.min(0),
+});
+
+export const createExpenseSchema = z
+  .object({
+    title: z.string().min(1, 'Title is required').max(200),
+    amountMinor: minorUnitsSchema.positive('Amount must be positive'),
+    currency: z.string().length(3).default('INR'),
+    // Single-payer convenience. Either paidBy or payers must be provided.
+    paidBy: uuidSchema.optional(),
+    // Multi-payer support: explicit paid shares per payer.
+    payers: z.array(payerSchema).min(1).optional(),
+    splitType: splitTypeSchema,
+    activityBlockId: uuidSchema.nullable().optional(),
+    customSplits: z.array(customSplitSchema).optional(),
+    percentageSplits: z.array(percentageSplitSchema).optional(),
+  })
+  .refine((data) => Boolean(data.paidBy) || (data.payers && data.payers.length > 0), {
+    message: 'Either paidBy or payers must be provided',
+    path: ['paidBy'],
+  });
+
+// Editing an expense: all fields optional except an actor is needed for logging.
+export const updateExpenseSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  amountMinor: minorUnitsSchema.positive().optional(),
+  currency: z.string().length(3).optional(),
+  paidBy: uuidSchema.optional(),
+  payers: z.array(payerSchema).min(1).optional(),
+  splitType: splitTypeSchema.optional(),
   activityBlockId: uuidSchema.nullable().optional(),
   customSplits: z.array(customSplitSchema).optional(),
   percentageSplits: z.array(percentageSplitSchema).optional(),
+});
+
+// Recording a settlement payment between two members.
+export const recordSettlementSchema = z.object({
+  fromUserId: uuidSchema,
+  toUserId: uuidSchema,
+  amountMinor: minorUnitsSchema.positive('Settlement amount must be positive'),
+  note: z.string().max(500).nullable().optional(),
+}).refine((data) => data.fromUserId !== data.toUserId, {
+  message: 'A settlement must be between two different members',
+  path: ['toUserId'],
 });
 
 // Trip join & member role schemas

@@ -29,6 +29,7 @@ import { getRecentActions, formatDescription, getActivityFeed } from '../service
 import { ErrorCodes } from '@trip-planner/shared';
 import { getIoInstance } from '../socket/io-instance.js';
 import { tripVoteRoutes } from './votes.js';
+import { tripExpenseRoutes, tripSettlementRoutes } from './expenses.js';
 
 const router = Router();
 
@@ -540,6 +541,11 @@ router.delete('/:id/blocks/:blockId', requireRole('owner', 'editor') as RequestH
 // ─── Vote Routes ─────────────────────────────────────────────────────────────
 
 router.use('/:id/votes', tripVoteRoutes);
+
+// ─── Expense Routes ──────────────────────────────────────────────────────────
+
+router.use('/:id/expenses', tripExpenseRoutes);
+router.use('/:id/settlements', tripSettlementRoutes);
 
 // ─── Activity Feed ───────────────────────────────────────────────────────────
 
