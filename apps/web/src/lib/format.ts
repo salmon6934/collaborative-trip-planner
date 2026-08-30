@@ -215,3 +215,77 @@ export const COMMON_TIMEZONES: string[] = [
   'Australia/Sydney',
   'Pacific/Auckland',
 ];
+
+// ─── Money / minor-unit formatting ───────────────────────────────────────────
+//
+// All monetary values travel over the wire as integer minor units (e.g. paise
+// or cents) to avoid floating-point drift. These helpers convert to/from a
+// decimal representation for display and form input only.
+
+/**
+ * Number of minor-unit decimal places per currency. Most currencies use 2
+ * (e.g. INR paise, USD cents). Zero-decimal currencies are listed explicitly.
+ */
+const CURRENCY_DECIMALS: Record<string, number> = {
+  JPY: 0,
+  KRW: 0,
+  VND: 0,
+  CLP: 0,
+  ISK: 0,
+};
+
+/** Returns the number of minor-unit decimal places for a currency code. */
+export function currencyDecimals(currency: string): number {
+  return CURRENCY_DECIMALS[currency?.toUpperCase()] ?? 2;
+}
+
+/**
+ * Formats an integer minor-unit amount for display, e.g. formatMoney(2450000, 'INR')
+ * -> "INR 24,500.00". Uses grouped thousands and the currency's decimal places.
+ */
+export function formatMoney(amountMinor: number, currency = 'INR'): string {
+  const decimals = currencyDecimals(currency);
+  const factor = 10 ** decimals;
+  const negative = amountMinor < 0;
+  const abs = Math.abs(amountMinor);
+  const major = abs / factor;
+  const formatted = major.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  return `${negative ? '-' : ''}${currency} ${formatted}`;
+}
+
+/**
+ * Formats a signed net balance with an explicit sign, e.g. "+INR 1,200.00" or
+ * "-INR 800.00". Zero renders without a sign.
+ */
+export function formatSignedMoney(amountMinor: number, currency = 'INR'): string {
+  if (amountMinor === 0) return formatMoney(0, currency);
+  const sign = amountMinor > 0 ? '+' : '-';
+  return `${sign}${formatMoney(Math.abs(amountMinor), currency)}`;
+}
+
+/**
+ * Converts an integer minor-unit amount to a decimal-string suitable for a
+ * form input value, e.g. toMajorString(2450000, 'INR') -> "24500.00".
+ */
+export function toMajorString(amountMinor: number, currency = 'INR'): string {
+  const decimals = currencyDecimals(currency);
+  const factor = 10 ** decimals;
+  return (amountMinor / factor).toFixed(decimals);
+}
+
+/**
+ * Parses a user-entered decimal amount (major units) into integer minor units.
+ * Returns null when the input is empty or not a valid non-negative number.
+ * Rounds to the nearest minor unit to avoid floating-point residue.
+ */
+export function parseMoneyToMinor(input: string, currency = 'INR'): number | null {
+  const trimmed = input.trim();
+  if (trimmed === '') return null;
+  const value = Number(trimmed);
+  if (!Number.isFinite(value) || value < 0) return null;
+  const factor = 10 ** currencyDecimals(currency);
+  return Math.round(value * factor);
+}

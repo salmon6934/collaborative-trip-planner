@@ -14,8 +14,24 @@ import {
   recordSettlement,
   getSettlements,
   getTripSummary,
+  computeSettlements,
 } from '../services/expense.service.js';
 import { ErrorCodes } from '@trip-planner/shared';
+import { getIoInstance } from '../socket/io-instance.js';
+
+/**
+ * Broadcasts an expense-related event to everyone in the trip room. The
+ * originating client is included (REST calls have no socket to exclude) and
+ * relies on `userId` in the payload to dedupe against its own optimistic
+ * update. Never throws — a socket failure must not break the REST response.
+ */
+function broadcastToTrip(tripId: string, event: string, payload: Record<string, unknown>): void {
+  try {
+    getIoInstance().to(`trip:${tripId}`).emit(event, payload);
+  } catch (err) {
+    console.error(`Failed to broadcast ${event}:`, err);
+  }
+}
 
 // ─── Trip-scoped expense routes (mounted on /api/trips/:id/expenses) ─────────
 
@@ -51,6 +67,12 @@ tripExpenseRoutes.post(
         });
         return;
       }
+
+      broadcastToTrip(tripId, 'expense:created', {
+        expense: result.expense,
+        splits: result.splits,
+        userId: req.auth?.userId,
+      });
 
       res.status(201).json({ expense: result.expense, splits: result.splits });
     } catch (error) {
@@ -126,6 +148,12 @@ tripExpenseRoutes.put(
         return;
       }
 
+      broadcastToTrip(tripId, 'expense:updated', {
+        expense: result.expense,
+        splits: result.splits,
+        userId: actorId,
+      });
+
       res.status(200).json({ expense: result.expense, splits: result.splits });
     } catch (error) {
       console.error('Update expense error:', error);
@@ -160,9 +188,42 @@ tripExpenseRoutes.delete(
         return;
       }
 
+      broadcastToTrip(tripId, 'expense:deleted', {
+        expenseId,
+        userId: actorId,
+      });
+
       res.status(200).json({ expense: deleted });
     } catch (error) {
       console.error('Delete expense error:', error);
+      res.status(500).json({
+        code: 'INTERNAL_ERROR',
+        message: 'An unexpected error occurred',
+      });
+    }
+  }
+);
+
+// ─── Trip-scoped balance route (mounted on /api/trips/:id/balances) ──────────
+
+export const tripBalanceRoutes = Router({ mergeParams: true });
+
+/**
+ * GET /api/trips/:id/balances
+ * Return the trip total plus each member's net balance (integer minor units)
+ * and the minimal suggested settlements to zero out balances. Member role.
+ */
+tripBalanceRoutes.get(
+  '/',
+  requireMember() as RequestHandler,
+  async (req: Request, res: Response) => {
+    try {
+      const tripId = req.params.id as string;
+
+      const summary = await getTripSummary(tripId);
+      res.status(200).json({ summary });
+    } catch (error) {
+      console.error('Get balances error:', error);
       res.status(500).json({
         code: 'INTERNAL_ERROR',
         message: 'An unexpected error occurred',
@@ -177,7 +238,8 @@ export const tripSettlementRoutes = Router({ mergeParams: true });
 
 /**
  * GET /api/trips/:id/settlements
- * Return the trip's net balances plus recorded settlement payments. Member role.
+ * Return the trip summary (net balances + suggested minimal transactions),
+ * the recorded settlement payments, and the suggested settlements. Member role.
  */
 tripSettlementRoutes.get(
   '/',
@@ -186,12 +248,15 @@ tripSettlementRoutes.get(
     try {
       const tripId = req.params.id as string;
 
-      const [summary, settlements] = await Promise.all([
+      const [summary, payments, suggested] = await Promise.all([
         getTripSummary(tripId),
         getSettlements(tripId),
+        computeSettlements(tripId),
       ]);
 
-      res.status(200).json({ summary, settlements });
+      // `payments` are recorded settlement rows; `suggested` are the minimal
+      // transactions that would zero every remaining balance.
+      res.status(200).json({ summary, suggested, payments, settlements: payments });
     } catch (error) {
       console.error('Get settlements error:', error);
       res.status(500).json({
@@ -223,6 +288,11 @@ tripSettlementRoutes.post(
         amountMinor,
         note ?? null
       );
+
+      broadcastToTrip(tripId, 'expense:settled', {
+        settlement,
+        userId: req.auth?.userId,
+      });
 
       res.status(201).json({ settlement });
     } catch (error) {

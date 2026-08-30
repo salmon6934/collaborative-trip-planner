@@ -80,6 +80,9 @@ import {
   deleteExpense,
   recordSettlement,
   getTripSummary,
+  getBalances,
+  computeSettlements,
+  simplifyDebts,
 } from './expense.service.js';
 import { ErrorCodes } from '@trip-planner/shared';
 
@@ -349,5 +352,176 @@ describe('Expense Service — persistence', () => {
       expect(balanceOf('user-1')).toBe(2000);
       expect(balanceOf('user-2')).toBe(-2000);
     });
+  });
+});
+
+// ─── Debt Simplification (pure) ──────────────────────────────────────────────
+
+describe('simplifyDebts — greedy min-transactions (integer minor units)', () => {
+  /** Folds suggested settlements back into balances exactly as getBalances does. */
+  function applySettlements(
+    balances: Map<string, number>,
+    txns: { from: string; to: string; amountMinor: number }[]
+  ): Map<string, number> {
+    const result = new Map(balances);
+    const bump = (userId: string, delta: number) =>
+      result.set(userId, (result.get(userId) ?? 0) + delta);
+    for (const t of txns) {
+      // from_user += amount, to_user -= amount (consistent with settlements fold)
+      bump(t.from, t.amountMinor);
+      bump(t.to, -t.amountMinor);
+    }
+    return result;
+  }
+
+  it('returns no transactions when everyone is settled', () => {
+    const balances = new Map([
+      ['a', 0],
+      ['b', 0],
+    ]);
+    expect(simplifyDebts(balances)).toEqual([]);
+  });
+
+  it('matches a single creditor against multiple debtors', () => {
+    const balances = new Map([
+      ['a', 5000], // owed
+      ['b', -3000], // owes
+      ['c', -2000], // owes
+    ]);
+    const txns = simplifyDebts(balances);
+
+    expect(txns).toHaveLength(2);
+    // Every transaction flows into the sole creditor.
+    expect(txns.every((t) => t.to === 'a')).toBe(true);
+    expect(sumMinor(txns.map((t) => t.amountMinor))).toBe(5000);
+    // Recording all suggested settlements zeros every balance.
+    for (const [, bal] of applySettlements(balances, txns)) {
+      expect(bal).toBe(0);
+    }
+  });
+
+  it('produces at most n-1 transactions and zeros all balances for 4 members', () => {
+    const balances = new Map([
+      ['a', 6000],
+      ['b', 1000],
+      ['c', -4000],
+      ['d', -3000],
+    ]);
+    const txns = simplifyDebts(balances);
+
+    const nonZero = Array.from(balances.values()).filter((v) => v !== 0).length;
+    expect(txns.length).toBeLessThanOrEqual(nonZero - 1);
+
+    for (const [, bal] of applySettlements(balances, txns)) {
+      expect(bal).toBe(0);
+    }
+  });
+
+  it('ignores exact-zero balances and never emits fractional amounts', () => {
+    const balances = new Map([
+      ['a', 3333],
+      ['b', 3333],
+      ['c', 3334],
+      ['d', -10000],
+    ]);
+    const txns = simplifyDebts(balances);
+
+    expect(txns.every((t) => Number.isInteger(t.amountMinor) && t.amountMinor > 0)).toBe(true);
+    expect(sumMinor(txns.map((t) => t.amountMinor))).toBe(10000);
+    for (const [, bal] of applySettlements(balances, txns)) {
+      expect(bal).toBe(0);
+    }
+  });
+});
+
+// ─── getBalances / computeSettlements (DB-backed) ────────────────────────────
+
+describe('Expense Service — balances & settlement computation', () => {
+  beforeEach(() => {
+    resultQueue = [];
+    valuesCalls.length = 0;
+    setCalls.length = 0;
+    vi.clearAllMocks();
+  });
+
+  it('getBalances computes net = paid - owed per member, folding settlements', () => {
+    return (async () => {
+      // One expense: user-1 paid 10000, each owes 5000 -> +5000 / -5000.
+      resultQueue.push([{ id: 'exp-1', tripId: 'trip-1', amountMinor: 10000, deletedAt: null }]);
+      resultQueue.push([
+        { userId: 'user-1', owedMinor: 5000, paidMinor: 10000 },
+        { userId: 'user-2', owedMinor: 5000, paidMinor: 0 },
+      ]);
+      resultQueue.push([]); // no settlements
+
+      const balances = await getBalances('trip-1');
+      expect(balances.get('user-1')).toBe(5000);
+      expect(balances.get('user-2')).toBe(-5000);
+    })();
+  });
+
+  it('computeSettlements suggests the minimal transaction to clear balances', async () => {
+    resultQueue.push([{ id: 'exp-1', tripId: 'trip-1', amountMinor: 10000, deletedAt: null }]);
+    resultQueue.push([
+      { userId: 'user-1', owedMinor: 5000, paidMinor: 10000 },
+      { userId: 'user-2', owedMinor: 5000, paidMinor: 0 },
+    ]);
+    resultQueue.push([]); // no settlements
+
+    const txns = await computeSettlements('trip-1');
+    expect(txns).toEqual([
+      { from: 'user-2', to: 'user-1', amountMinor: 5000, currency: 'INR' },
+    ]);
+  });
+
+  it('getTripSummary includes total, per-member balances, and suggested settlements', async () => {
+    resultQueue.push([{ id: 'exp-1', tripId: 'trip-1', amountMinor: 10000, deletedAt: null }]);
+    resultQueue.push([
+      { userId: 'user-1', owedMinor: 5000, paidMinor: 10000 },
+      { userId: 'user-2', owedMinor: 5000, paidMinor: 0 },
+    ]);
+    resultQueue.push([]); // no settlements
+
+    const summary = await getTripSummary('trip-1');
+    expect(summary.totalMinor).toBe(10000);
+    expect(summary.settlements).toEqual([
+      { from: 'user-2', to: 'user-1', amountMinor: 5000, currency: 'INR' },
+    ]);
+  });
+
+  it('recording the suggested settlements zeros every balance (4 members)', async () => {
+    // Expense A: user-1 paid 20000, 4 members owe 5000 each.
+    //   -> user-1 +15000, others -5000 each.
+    resultQueue.push([{ id: 'exp-1', tripId: 'trip-1', amountMinor: 20000, deletedAt: null }]);
+    resultQueue.push([
+      { userId: 'user-1', owedMinor: 5000, paidMinor: 20000 },
+      { userId: 'user-2', owedMinor: 5000, paidMinor: 0 },
+      { userId: 'user-3', owedMinor: 5000, paidMinor: 0 },
+      { userId: 'user-4', owedMinor: 5000, paidMinor: 0 },
+    ]);
+    resultQueue.push([]); // no settlements yet
+
+    const suggested = await computeSettlements('trip-1');
+    // 3 debtors -> at most 3 transactions, all flowing to the sole creditor.
+    expect(suggested.length).toBeLessThanOrEqual(3);
+    expect(suggested.every((t) => t.to === 'user-1')).toBe(true);
+    expect(sumMinor(suggested.map((t) => t.amountMinor))).toBe(15000);
+
+    // Now recompute balances WITH those settlements recorded -> everyone zero.
+    resultQueue.push([{ id: 'exp-1', tripId: 'trip-1', amountMinor: 20000, deletedAt: null }]);
+    resultQueue.push([
+      { userId: 'user-1', owedMinor: 5000, paidMinor: 20000 },
+      { userId: 'user-2', owedMinor: 5000, paidMinor: 0 },
+      { userId: 'user-3', owedMinor: 5000, paidMinor: 0 },
+      { userId: 'user-4', owedMinor: 5000, paidMinor: 0 },
+    ]);
+    resultQueue.push(
+      suggested.map((t) => ({ fromUserId: t.from, toUserId: t.to, amountMinor: t.amountMinor }))
+    );
+
+    const balances = await getBalances('trip-1');
+    for (const [, bal] of balances) {
+      expect(bal).toBe(0);
+    }
   });
 });

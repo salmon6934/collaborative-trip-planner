@@ -29,7 +29,7 @@ import { getRecentActions, formatDescription, getActivityFeed } from '../service
 import { ErrorCodes } from '@trip-planner/shared';
 import { getIoInstance } from '../socket/io-instance.js';
 import { tripVoteRoutes } from './votes.js';
-import { tripExpenseRoutes, tripSettlementRoutes } from './expenses.js';
+import { tripExpenseRoutes, tripSettlementRoutes, tripBalanceRoutes } from './expenses.js';
 
 const router = Router();
 
@@ -546,6 +546,7 @@ router.use('/:id/votes', tripVoteRoutes);
 
 router.use('/:id/expenses', tripExpenseRoutes);
 router.use('/:id/settlements', tripSettlementRoutes);
+router.use('/:id/balances', tripBalanceRoutes);
 
 // ─── Activity Feed ───────────────────────────────────────────────────────────
 

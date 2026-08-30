@@ -3,7 +3,7 @@ import { db } from '../db/index.js';
 import { expenses, expenseSplits, settlements } from '../db/schema.js';
 import { getMembers } from './trip.service.js';
 import { logAction } from './activity-feed.service.js';
-import { ErrorCodes } from '@trip-planner/shared';
+import { ErrorCodes, type SettlementTransaction } from '@trip-planner/shared';
 
 // ─── Split Calculation Utilities (integer minor units) ───────────────────────
 //
@@ -431,15 +431,19 @@ export async function getSettlements(tripId: string) {
 // ─── Balance / Summary Computation ───────────────────────────────────────────
 
 /**
- * Computes each member's net balance for a trip in integer minor units.
+ * Single aggregation pass over a trip's non-deleted expenses. Returns both the
+ * trip total and each member's net balance (all in integer minor units), so
+ * that `getBalances` and `getTripSummary` share one consistent computation.
  *
- * netBalance = totalPaid - totalOwed, then adjusted by recorded settlements:
- * a debtor paying a creditor moves the debtor's balance toward zero (+amount)
- * and the creditor's balance down (-amount).
+ * netBalance = SUM(paidMinor) - SUM(owedMinor), then adjusted by recorded
+ * settlements: a debtor paying a creditor moves the debtor's balance toward
+ * zero (+amount) and the creditor's balance down (-amount).
  *
  * A positive balance means the member is owed money; negative means they owe.
  */
-export async function getTripSummary(tripId: string) {
+async function aggregateTrip(
+  tripId: string
+): Promise<{ totalMinor: number; balances: Map<string, number> }> {
   const activeExpenses = await db
     .select()
     .from(expenses)
@@ -461,19 +465,97 @@ export async function getTripSummary(tripId: string) {
     }
   }
 
-  // Apply recorded settlements.
+  // Fold in recorded settlements with a consistent sign convention:
+  // from_user += amount (they paid, so they owe less), to_user -= amount.
   const tripSettlements = await getSettlements(tripId);
   for (const st of tripSettlements) {
     bump(st.fromUserId, st.amountMinor);
     bump(st.toUserId, -st.amountMinor);
   }
 
+  return { totalMinor, balances };
+}
+
+/**
+ * Computes each member's net balance for a trip as a Map<userId, balanceMinor>
+ * in integer minor units. Positive = the member is owed money; negative = the
+ * member owes. Zero-balance members are still included in the map.
+ */
+export async function getBalances(tripId: string): Promise<Map<string, number>> {
+  const { balances } = await aggregateTrip(tripId);
+  return balances;
+}
+
+/**
+ * Greedy min-transactions debt simplification over integer minor-unit balances.
+ *
+ * Separates members into creditors (positive balance) and debtors (negative),
+ * sorts both descending by magnitude, then repeatedly matches the largest
+ * creditor with the largest debtor for min(creditor, debtor) until settled.
+ * Produces at most n-1 transactions for n members with non-zero balances.
+ *
+ * All arithmetic is exact because balances are integer minor units.
+ */
+export function simplifyDebts(balances: Map<string, number>): SettlementTransaction[] {
+  const transactions: SettlementTransaction[] = [];
+
+  const creditors: { userId: string; amount: number }[] = [];
+  const debtors: { userId: string; amount: number }[] = [];
+
+  for (const [userId, balance] of balances) {
+    if (balance > 0) creditors.push({ userId, amount: balance });
+    else if (balance < 0) debtors.push({ userId, amount: -balance });
+  }
+
+  // Sort descending by amount for greedy matching (deterministic order).
+  creditors.sort((a, b) => b.amount - a.amount);
+  debtors.sort((a, b) => b.amount - a.amount);
+
+  let i = 0;
+  let j = 0;
+  while (i < creditors.length && j < debtors.length) {
+    const settleAmount = Math.min(creditors[i].amount, debtors[j].amount);
+
+    transactions.push({
+      from: debtors[j].userId,
+      to: creditors[i].userId,
+      amountMinor: settleAmount,
+      currency: 'INR',
+    });
+
+    creditors[i].amount -= settleAmount;
+    debtors[j].amount -= settleAmount;
+
+    if (creditors[i].amount === 0) i++;
+    if (debtors[j].amount === 0) j++;
+  }
+
+  return transactions;
+}
+
+/**
+ * Computes the minimal set of settlement transactions that zero out every
+ * member's net balance for a trip: net balances via `getBalances`, then the
+ * greedy `simplifyDebts` matching.
+ */
+export async function computeSettlements(tripId: string): Promise<SettlementTransaction[]> {
+  const balances = await getBalances(tripId);
+  return simplifyDebts(balances);
+}
+
+/**
+ * Trip expense summary: total cost, per-member net balance (all in integer
+ * minor units), and the minimal suggested settlements to zero out balances.
+ */
+export async function getTripSummary(tripId: string) {
+  const { totalMinor, balances } = await aggregateTrip(tripId);
+
   const memberBalances = Array.from(balances.entries()).map(([userId, balanceMinor]) => ({
     userId,
     balanceMinor,
   }));
 
-  return { totalMinor, memberBalances };
+  return { totalMinor, memberBalances, settlements: simplifyDebts(balances) };
 }
 
 // ─── Link to Activity Block ──────────────────────────────────────────────────
