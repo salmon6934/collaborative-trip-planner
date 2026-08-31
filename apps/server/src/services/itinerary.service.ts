@@ -1,7 +1,7 @@
-import { eq, asc, and, desc } from 'drizzle-orm';
+import { eq, asc, and, desc, inArray } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { days, activityBlocks, expenses } from '../db/schema.js';
-import { logAction } from './activity-feed.service.js';
+import { logActivityAndBroadcast } from './activity-feed.service.js';
 
 // ─── Day Generation ──────────────────────────────────────────────────────────
 
@@ -144,8 +144,8 @@ export async function createBlock(dayId: string, tripId: string, input: CreateBl
     })
     .returning();
 
-  // Log activity (non-blocking)
-  logAction(tripId, createdBy, 'created', 'activity_block', block.id, {
+  // Log activity + broadcast a live feed entry (non-blocking)
+  logActivityAndBroadcast(tripId, createdBy, 'created', 'activity_block', block.id, {
     title: input.title,
   }).catch(() => {});
 
@@ -189,8 +189,8 @@ export async function updateBlock(blockId: string, input: UpdateBlockInput, user
     .returning();
 
   if (updated && userId) {
-    // Log activity (non-blocking)
-    logAction(updated.tripId, userId, 'updated', 'activity_block', blockId, {
+    // Log activity + broadcast a live feed entry (non-blocking)
+    logActivityAndBroadcast(updated.tripId, userId, 'updated', 'activity_block', blockId, {
       title: updated.title,
     }).catch(() => {});
   }
@@ -226,11 +226,32 @@ export async function moveBlock(blockId: string, targetDayId: string, targetPosi
     .returning();
 
   if (updated && userId && sourceDayId !== targetDayId) {
-    // Log activity (non-blocking) — only log move when day actually changed
-    logAction(updated.tripId, userId, 'moved', 'activity_block', blockId, {
+    // Resolve the human-facing day numbers for the source/target days so the
+    // activity description reads "from Day 2 to Day 3" rather than raw UUIDs.
+    // Lookups are defensive: a failure or missing day falls back to the id
+    // without breaking the (already-committed) move.
+    let fromDay: number | string = sourceDayId;
+    let toDay: number | string = targetDayId;
+    try {
+      const dayRows = await db
+        .select({ id: days.id, dayNumber: days.dayNumber })
+        .from(days)
+        .where(inArray(days.id, [sourceDayId, targetDayId]));
+
+      const sourceNumber = dayRows.find((d) => d.id === sourceDayId)?.dayNumber;
+      const targetNumber = dayRows.find((d) => d.id === targetDayId)?.dayNumber;
+      if (sourceNumber !== undefined) fromDay = sourceNumber;
+      if (targetNumber !== undefined) toDay = targetNumber;
+    } catch (err) {
+      console.error('Failed to resolve day numbers for move activity:', err);
+    }
+
+    // Log activity + broadcast a live feed entry (non-blocking) — only log a
+    // move when the day actually changed.
+    logActivityAndBroadcast(updated.tripId, userId, 'moved', 'activity_block', blockId, {
       title: updated.title,
-      fromDay: sourceDayId,
-      toDay: targetDayId,
+      fromDay,
+      toDay,
     }).catch(() => {});
   }
 
@@ -291,8 +312,8 @@ export async function deleteBlock(blockId: string, userId?: string) {
     .returning();
 
   if (deleted && userId) {
-    // Log activity (non-blocking)
-    logAction(deleted.tripId, userId, 'deleted', 'activity_block', blockId, {
+    // Log activity + broadcast a live feed entry (non-blocking)
+    logActivityAndBroadcast(deleted.tripId, userId, 'deleted', 'activity_block', blockId, {
       title: deleted.title,
     }).catch(() => {});
   }

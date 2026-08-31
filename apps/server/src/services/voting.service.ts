@@ -3,7 +3,7 @@ import { db } from '../db/index.js';
 import { votes, voteOptions, voteResponses } from '../db/schema.js';
 import { ErrorCodes } from '@trip-planner/shared';
 import { createBlock, CreateBlockInput } from './itinerary.service.js';
-import { logAction } from './activity-feed.service.js';
+import { logActivityAndBroadcast } from './activity-feed.service.js';
 
 // ─── Poll Creation ───────────────────────────────────────────────────────────
 
@@ -52,8 +52,8 @@ export async function createPoll(
     .values(optionRows)
     .returning();
 
-  // Log activity (non-blocking)
-  logAction(tripId, userId, 'created', 'vote', vote.id, {
+  // Log activity + broadcast a live feed entry (non-blocking)
+  logActivityAndBroadcast(tripId, userId, 'created', 'vote', vote.id, {
     title: question,
   }).catch(() => {});
 
@@ -97,8 +97,8 @@ export async function castVote(voteId: string, optionId: string, userId: string)
     })
     .returning();
 
-  // Log activity (non-blocking)
-  logAction(poll.tripId, userId, 'voted', 'vote', voteId, {
+  // Log activity + broadcast a live feed entry (non-blocking)
+  logActivityAndBroadcast(poll.tripId, userId, 'voted', 'vote', voteId, {
     title: poll.question,
   }).catch(() => {});
 
@@ -167,8 +167,8 @@ export async function resolvePoll(voteId: string, winningOptionId: string, userI
     .where(eq(votes.id, voteId))
     .returning();
 
-  // Log activity (non-blocking)
-  logAction(poll.tripId, userId, 'resolved', 'vote', voteId, {
+  // Log activity + broadcast a live feed entry (non-blocking)
+  logActivityAndBroadcast(poll.tripId, userId, 'resolved', 'vote', voteId, {
     title: poll.question,
   }).catch(() => {});
 

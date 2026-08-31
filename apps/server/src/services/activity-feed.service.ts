@@ -1,11 +1,19 @@
 import { eq, desc } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { activityLog, users } from '../db/schema.js';
+import { getIoInstance } from '../socket/io-instance.js';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type ActionType = 'created' | 'updated' | 'moved' | 'deleted' | 'voted' | 'resolved';
-export type EntityType = 'activity_block' | 'vote' | 'expense' | 'trip_member';
+export type ActionType =
+  | 'created'
+  | 'updated'
+  | 'moved'
+  | 'deleted'
+  | 'voted'
+  | 'resolved'
+  | 'settled';
+export type EntityType = 'activity_block' | 'vote' | 'expense' | 'trip_member' | 'settlement';
 
 export interface ActivityLogEntry {
   id: string;
@@ -16,6 +24,18 @@ export interface ActivityLogEntry {
   entityId: string;
   metadata: Record<string, unknown> | null;
   createdAt: Date;
+}
+
+/**
+ * An activity log entry enriched with the actor's display name and a
+ * human-readable description. This is the exact shape returned per item by
+ * `getActivityFeed` (and `GET /api/trips/:id/activity`), so the same object
+ * can be rendered by the client whether it arrives via REST or a live
+ * `activity:new` socket event.
+ */
+export interface EnrichedActivityEntry extends ActivityLogEntry {
+  userName: string;
+  description: string;
 }
 
 // ─── Service Methods ─────────────────────────────────────────────────────────
@@ -53,6 +73,69 @@ export async function logAction(
 }
 
 /**
+ * Enriches a raw activity log entry with the actor's display name and a
+ * formatted description, producing the same per-item shape as
+ * `getActivityFeed`. The actor's name is resolved from the users table,
+ * falling back to 'Someone' if the user can't be found.
+ */
+export async function buildActivityEntry(
+  entry: ActivityLogEntry
+): Promise<EnrichedActivityEntry> {
+  const [user] = await db
+    .select({ name: users.name })
+    .from(users)
+    .where(eq(users.id, entry.userId));
+
+  const userName = user?.name ?? 'Someone';
+
+  return {
+    ...entry,
+    userName,
+    description: formatDescription(entry, userName),
+  };
+}
+
+/**
+ * Logs an action and broadcasts a fully-formed `activity:new` event to the
+ * trip room, so every connected client can render the entry directly instead
+ * of reconstructing text from raw payloads. The event is emitted to the whole
+ * room (the actor included); clients de-dupe by entry id and only toast for
+ * other users' actions.
+ *
+ * Fully non-blocking: every failure (DB, user lookup, or socket) is caught so
+ * the caller's main operation is never affected. Returns the enriched entry on
+ * success, or null if the action could not be logged.
+ */
+export async function logActivityAndBroadcast(
+  tripId: string,
+  userId: string,
+  action: ActionType,
+  entityType: EntityType,
+  entityId: string,
+  metadata?: Record<string, unknown>
+): Promise<EnrichedActivityEntry | null> {
+  try {
+    const entry = await logAction(tripId, userId, action, entityType, entityId, metadata);
+    if (!entry) return null;
+
+    const enriched = await buildActivityEntry(entry);
+
+    try {
+      getIoInstance().to(`trip:${tripId}`).emit('activity:new', enriched);
+    } catch (err) {
+      // Socket server may not be initialized (e.g. in tests); the activity was
+      // still logged, so this is non-fatal.
+      console.error('Failed to broadcast activity:new:', err);
+    }
+
+    return enriched;
+  } catch (err) {
+    console.error('Failed to log/broadcast activity:', err);
+    return null;
+  }
+}
+
+/**
  * Gets recent activity log entries for a trip, ordered by createdAt DESC.
  */
 export async function getRecentActions(
@@ -78,6 +161,11 @@ export function formatDescription(entry: ActivityLogEntry, userName: string): st
   const metadata = entry.metadata ?? {};
   const entityName = (metadata.title as string) || entry.entityType;
 
+  // Settlements read as a payment between two people, so they resolve their own
+  // counterparty/amount from metadata rather than using the generic entityName.
+  const counterparty = (metadata.counterparty as string) || 'someone';
+  const amount = (metadata.amount as string) || 'a payment';
+
   const templates: Record<ActionType, string> = {
     created: `${userName} added '${entityName}'`,
     updated: `${userName} updated '${entityName}'`,
@@ -85,6 +173,7 @@ export function formatDescription(entry: ActivityLogEntry, userName: string): st
     deleted: `${userName} removed '${entityName}'`,
     voted: `${userName} voted on '${entityName}'`,
     resolved: `${userName} resolved poll '${entityName}'`,
+    settled: `${userName} paid ${counterparty} ${amount}`,
   };
 
   return templates[entry.action as ActionType] || `${userName} performed '${entry.action}' on '${entityName}'`;

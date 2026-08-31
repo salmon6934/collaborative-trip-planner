@@ -58,6 +58,10 @@ vi.mock('../db/schema.js', () => ({
     id: 'settlements.id',
     tripId: 'settlements.trip_id',
   },
+  users: {
+    id: 'users.id',
+    name: 'users.name',
+  },
 }));
 
 const mockGetMembers = vi.fn();
@@ -67,6 +71,7 @@ vi.mock('./trip.service.js', () => ({
 
 vi.mock('./activity-feed.service.js', () => ({
   logAction: vi.fn(() => Promise.resolve()),
+  logActivityAndBroadcast: vi.fn(() => Promise.resolve(null)),
 }));
 
 import {
@@ -85,6 +90,7 @@ import {
   simplifyDebts,
 } from './expense.service.js';
 import { ErrorCodes } from '@trip-planner/shared';
+import { logActivityAndBroadcast } from './activity-feed.service.js';
 
 // ─── Pure Split Math ─────────────────────────────────────────────────────────
 
@@ -320,11 +326,38 @@ describe('Expense Service — persistence', () => {
     it('inserts a settlement payment record', async () => {
       resultQueue.push([
         { id: 'set-1', tripId: 'trip-1', fromUserId: 'user-2', toUserId: 'user-1', amountMinor: 3000, note: null },
-      ]);
+      ]); // settlement insert returning
+      resultQueue.push([{ name: 'Alice' }]); // recipient (toUser) name lookup
 
       const settlement = await recordSettlement('trip-1', 'user-2', 'user-1', 3000);
       expect(settlement).toMatchObject({ fromUserId: 'user-2', toUserId: 'user-1', amountMinor: 3000 });
       expect(valuesCalls[0]).toMatchObject({ amountMinor: 3000 });
+    });
+
+    it('logs a settled activity entry with counterparty, formatted amount, and amountMinor', async () => {
+      resultQueue.push([
+        { id: 'set-1', tripId: 'trip-1', fromUserId: 'user-2', toUserId: 'user-1', amountMinor: 50000, note: null },
+      ]); // settlement insert returning
+      resultQueue.push([{ name: 'Alice' }]); // recipient (toUser) name lookup -> counterparty
+
+      await recordSettlement('trip-1', 'user-2', 'user-1', 50000);
+
+      // The feed log/broadcast runs in a non-blocking async task; let it flush.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(logActivityAndBroadcast).toHaveBeenCalledWith(
+        'trip-1',
+        'user-2',
+        'settled',
+        'settlement',
+        'set-1',
+        {
+          counterparty: 'Alice',
+          amount: 'INR 500.00',
+          amountMinor: 50000,
+          toUserId: 'user-1',
+        }
+      );
     });
   });
 

@@ -50,7 +50,12 @@ vi.mock('../db/schema.js', () => ({
   },
 }));
 
+vi.mock('./activity-feed.service.js', () => ({
+  logActivityAndBroadcast: vi.fn(() => Promise.resolve(null)),
+}));
+
 import { generateDays, calculatePosition, getDaysWithBlocks, createBlock, updateBlock, deleteBlock, moveBlock, reorderBlocks } from './itinerary.service.js';
+import { logActivityAndBroadcast } from './activity-feed.service.js';
 
 describe('Itinerary Service', () => {
   beforeEach(() => {
@@ -391,6 +396,85 @@ describe('Itinerary Service', () => {
       expect(result).toEqual(movedBlock);
       expect(result!.dayId).toBe('day-3');
       expect(result!.position).toBe(1.0);
+    });
+
+    it('should log the move with resolved day NUMBERS (not day UUIDs) in metadata', async () => {
+      const existingBlock = {
+        id: 'block-1',
+        dayId: 'day-uuid-2',
+        tripId: 'trip-1',
+        title: 'Museum Visit',
+        category: 'activity',
+        position: 1.0,
+      };
+
+      // 1) select existing block
+      // 2) day-number lookup (source + target)
+      mockWhereResult
+        .mockResolvedValueOnce([existingBlock])
+        .mockResolvedValueOnce([
+          { id: 'day-uuid-2', dayNumber: 2 },
+          { id: 'day-uuid-3', dayNumber: 3 },
+        ]);
+
+      const movedBlock = {
+        ...existingBlock,
+        dayId: 'day-uuid-3',
+        position: 2.5,
+        updatedAt: new Date(),
+      };
+      mockUpdateReturning.mockResolvedValueOnce([movedBlock]);
+
+      await moveBlock('block-1', 'day-uuid-3', 2.5, 'user-1');
+
+      // Metadata must carry day NUMBERS so formatDescription renders
+      // "... from Day 2 to Day 3" instead of raw UUIDs.
+      expect(logActivityAndBroadcast).toHaveBeenCalledWith(
+        'trip-1',
+        'user-1',
+        'moved',
+        'activity_block',
+        'block-1',
+        { title: 'Museum Visit', fromDay: 2, toDay: 3 }
+      );
+    });
+
+    it('should fall back to day ids in metadata when day-number lookup fails', async () => {
+      const existingBlock = {
+        id: 'block-1',
+        dayId: 'day-uuid-2',
+        tripId: 'trip-1',
+        title: 'Museum Visit',
+        category: 'activity',
+        position: 1.0,
+      };
+
+      // 1) select existing block succeeds
+      // 2) day-number lookup rejects → graceful fallback to ids
+      mockWhereResult
+        .mockResolvedValueOnce([existingBlock])
+        .mockRejectedValueOnce(new Error('db down'));
+
+      const movedBlock = {
+        ...existingBlock,
+        dayId: 'day-uuid-3',
+        position: 2.5,
+        updatedAt: new Date(),
+      };
+      mockUpdateReturning.mockResolvedValueOnce([movedBlock]);
+
+      // The move itself must still succeed despite the lookup failure.
+      const result = await moveBlock('block-1', 'day-uuid-3', 2.5, 'user-1');
+      expect(result).toEqual(movedBlock);
+
+      expect(logActivityAndBroadcast).toHaveBeenCalledWith(
+        'trip-1',
+        'user-1',
+        'moved',
+        'activity_block',
+        'block-1',
+        { title: 'Museum Visit', fromDay: 'day-uuid-2', toDay: 'day-uuid-3' }
+      );
     });
   });
 

@@ -1,8 +1,8 @@
 import { eq, and, isNull } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { expenses, expenseSplits, settlements } from '../db/schema.js';
+import { expenses, expenseSplits, settlements, users } from '../db/schema.js';
 import { getMembers } from './trip.service.js';
-import { logAction } from './activity-feed.service.js';
+import { logActivityAndBroadcast } from './activity-feed.service.js';
 import { ErrorCodes, type SettlementTransaction } from '@trip-planner/shared';
 
 // ─── Split Calculation Utilities (integer minor units) ───────────────────────
@@ -269,7 +269,7 @@ export async function createExpense(tripId: string, input: CreateExpenseInput) {
     )
     .returning();
 
-  logAction(tripId, built.paidByUserId, 'created', 'expense', expense.id, {
+  logActivityAndBroadcast(tripId, built.paidByUserId, 'created', 'expense', expense.id, {
     title: input.title,
   }).catch(() => {});
 
@@ -354,9 +354,14 @@ export async function updateExpense(
     )
     .returning();
 
-  logAction(existing.tripId, input.actorId ?? built.paidByUserId, 'updated', 'expense', expenseId, {
-    title: merged.title,
-  }).catch(() => {});
+  logActivityAndBroadcast(
+    existing.tripId,
+    input.actorId ?? built.paidByUserId,
+    'updated',
+    'expense',
+    expenseId,
+    { title: merged.title }
+  ).catch(() => {});
 
   return { expense, splits };
 }
@@ -387,7 +392,7 @@ export async function deleteExpense(expenseId: string, actorId?: string, tripId?
 
   if (!deleted) return null;
 
-  logAction(deleted.tripId, actorId ?? deleted.paidBy, 'deleted', 'expense', expenseId, {
+  logActivityAndBroadcast(deleted.tripId, actorId ?? deleted.paidBy, 'deleted', 'expense', expenseId, {
     title: deleted.title,
   }).catch(() => {});
 
@@ -420,7 +425,41 @@ export async function recordSettlement(
     })
     .returning();
 
+  // Log to the activity feed and broadcast `activity:new` so other trip members
+  // get the feed entry + a toast. Fully non-blocking: any feed/socket failure
+  // must never break settlement recording. The entry's userId is the payer
+  // (fromUser), so it reads "{payer} paid {recipient} {amount}" and the payer
+  // (if they're the current viewer) doesn't get a duplicate toast.
+  (async () => {
+    const [toUser] = await db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, toUserId));
+    const toUserName = toUser?.name ?? 'Someone';
+
+    await logActivityAndBroadcast(tripId, fromUserId, 'settled', 'settlement', settlement.id, {
+      counterparty: toUserName,
+      amount: formatMoneyMinor(amountMinor),
+      amountMinor,
+      toUserId,
+    });
+  })().catch(() => {});
+
   return settlement;
+}
+
+/**
+ * Formats integer minor units into an INR display string with 2 decimals and
+ * grouped thousands (e.g. 50000 -> "INR 500.00"). Settlements carry no currency
+ * column and this app is INR-centric, so INR is the fixed default.
+ */
+function formatMoneyMinor(amountMinor: number): string {
+  const major = amountMinor / 100;
+  const formatted = major.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `INR ${formatted}`;
 }
 
 /** Lists all settlement records for a trip. */

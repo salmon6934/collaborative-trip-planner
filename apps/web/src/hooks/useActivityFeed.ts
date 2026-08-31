@@ -117,55 +117,36 @@ export function useActivityFeed({ tripId, token, socket, currentUserId }: UseAct
     fetchActivities(0);
   }, [fetchActivities]);
 
-  // Listen to socket events for real-time activity updates
+  // Listen to the server-authoritative `activity:new` event for real-time
+  // updates. The server sends a fully-formed entry (with userName + formatted
+  // description) identical in shape to the REST feed, so it can be rendered
+  // directly without reconstructing text from raw payloads.
   useEffect(() => {
     if (!socket) return;
 
-    const events = [
-      'block:created',
-      'block:updated',
-      'block:moved',
-      'block:deleted',
-      'vote:created',
-      'vote:cast',
-      'vote:resolved',
-    ];
+    function handleActivity(entry: ActivityEntry) {
+      if (!entry || !entry.id) return;
 
-    function handleActivity(data: any) {
-      // Build an ActivityEntry from the socket event data
-      const entry: ActivityEntry = {
-        id: data.id || `rt-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        tripId: data.tripId || tripId,
-        userId: data.userId || '',
-        action: data.action || '',
-        entityType: data.entityType || '',
-        entityId: data.entityId || '',
-        metadata: data.metadata || null,
-        createdAt: data.createdAt || new Date().toISOString(),
-        userName: data.userName || 'Someone',
-        description: data.description || `${data.userName || 'Someone'} made a change`,
-      };
+      // Prepend, de-duping by entry id (the actor also receives their own
+      // broadcast, and reconnects can replay events).
+      setActivities((prev) => {
+        if (prev.some((e) => e.id === entry.id)) return prev;
+        return [entry, ...prev];
+      });
 
-      // Prepend to the activity list
-      setActivities((prev) => [entry, ...prev]);
-
-      // If this is from another user, show a toast and increment unread
+      // Only toast + count unread for other users' actions.
       if (entry.userId !== currentUserId) {
         toast(entry.description, { duration: 4000 });
         setUnreadCount((prev) => prev + 1);
       }
     }
 
-    events.forEach((event) => {
-      socket.on(event, handleActivity);
-    });
+    socket.on('activity:new', handleActivity);
 
     return () => {
-      events.forEach((event) => {
-        socket.off(event, handleActivity);
-      });
+      socket.off('activity:new', handleActivity);
     };
-  }, [socket, tripId, currentUserId]);
+  }, [socket, currentUserId]);
 
   return {
     activities,

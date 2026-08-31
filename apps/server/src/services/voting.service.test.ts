@@ -68,6 +68,10 @@ vi.mock('./itinerary.service.js', () => ({
   createBlock: vi.fn(),
 }));
 
+vi.mock('./activity-feed.service.js', () => ({
+  logActivityAndBroadcast: vi.fn(() => Promise.resolve(null)),
+}));
+
 import { createPoll, castVote, hasUserVoted, getTallies, resolvePoll, listPolls } from './voting.service.js';
 import { ErrorCodes } from '@trip-planner/shared';
 
