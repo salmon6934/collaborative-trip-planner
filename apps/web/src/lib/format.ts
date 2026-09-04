@@ -249,7 +249,7 @@ export function formatMoney(amountMinor: number, currency = 'INR'): string {
   const negative = amountMinor < 0;
   const abs = Math.abs(amountMinor);
   const major = abs / factor;
-  const formatted = major.toLocaleString('en-US', {
+  const formatted = major.toLocaleString('en-IN', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
