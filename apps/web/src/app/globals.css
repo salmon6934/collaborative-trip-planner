@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens for the shadcn-style primitives in components/ui.
+ *
+ * Tailwind v4 is CSS-first (there is no tailwind.config.*), so utilities like
+ * bg-card, text-muted-foreground and ring-primary only exist if the matching
+ * --color-* token is registered here. Purely additive: the rest of the app uses
+ * palette utilities (bg-indigo-600, text-gray-900, ...) and is unaffected.
+ */
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #111827; /* gray-900 */
+
+  --color-card: #ffffff;
+  --color-card-foreground: #111827;
+
+  --color-muted: #f3f4f6; /* gray-100 */
+  --color-muted-foreground: #6b7280; /* gray-500 */
+
+  --color-primary: #4f46e5; /* indigo-600 — the app's brand colour */
+  --color-primary-foreground: #ffffff;
+
+  --color-border: #e5e7eb; /* gray-200 */
+  --color-ring: #6366f1; /* indigo-500 */
+}
+
 /* Sonner toast close button — larger and positioned right-center */
 [data-sonner-toast] [data-close-button] {
   position: absolute !important;

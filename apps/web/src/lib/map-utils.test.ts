@@ -4,7 +4,12 @@ import {
   toMapPins,
   groupPinsByDay,
   buildRouteSegments,
+  computePinsBounds,
   computePinsCenter,
+  formatDistance,
+  formatDuration,
+  haversineDistanceMeters,
+  withEstimatedDistances,
   type BlockLike,
   type MapPin,
 } from './map-utils';
@@ -112,7 +117,15 @@ describe('toMapPins', () => {
       category: 'food',
       dayNumber: 3,
       startTime: '12:30',
+      endTime: null,
     });
+  });
+
+  it('carries the end time through when present', () => {
+    const pins = toMapPins([
+      block({ id: 'y', dayNumber: 1, startTime: '09:00', endTime: '10:30' }),
+    ]);
+    expect(pins[0].endTime).toBe('10:30');
   });
 });
 
@@ -200,5 +213,138 @@ describe('computePinsCenter', () => {
 
   it('returns null when there are no pins', () => {
     expect(computePinsCenter([])).toBeNull();
+  });
+});
+
+describe('haversineDistanceMeters', () => {
+  it('returns zero for identical coordinates', () => {
+    const p = { latitude: 35.68, longitude: 139.76 };
+    expect(haversineDistanceMeters(p, p)).toBe(0);
+  });
+
+  it('matches a known distance (Tokyo Station → Tokyo Tower ≈ 4.0 km)', () => {
+    const meters = haversineDistanceMeters(
+      { latitude: 35.6812, longitude: 139.7671 },
+      { latitude: 35.6586, longitude: 139.7454 }
+    );
+    // Great-circle distance is ~3.2 km; allow a generous tolerance.
+    expect(meters).toBeGreaterThan(3000);
+    expect(meters).toBeLessThan(3500);
+  });
+
+  it('is symmetric', () => {
+    const a = { latitude: 12.97, longitude: 77.59 };
+    const b = { latitude: 19.08, longitude: 72.88 };
+    expect(haversineDistanceMeters(a, b)).toBeCloseTo(haversineDistanceMeters(b, a), 6);
+  });
+
+  it('approximates one degree of latitude as ~111 km anywhere on the globe', () => {
+    for (const lat of [-60, -30, 0, 30, 60]) {
+      const meters = haversineDistanceMeters(
+        { latitude: lat, longitude: 0 },
+        { latitude: lat + 1, longitude: 0 }
+      );
+      expect(meters).toBeGreaterThan(110_000);
+      expect(meters).toBeLessThan(112_000);
+    }
+  });
+});
+
+describe('withEstimatedDistances', () => {
+  it('fills in distance and duration on unenriched segments', () => {
+    const segments = buildRouteSegments([
+      pin({ blockId: 'a', dayNumber: 1, startTime: '09:00', latitude: 0, longitude: 0 }),
+      pin({ blockId: 'b', dayNumber: 1, startTime: '10:00', latitude: 0, longitude: 1 }),
+    ]);
+    const [segment] = withEstimatedDistances(segments);
+    expect(segment.distance).toBeGreaterThan(110_000);
+    expect(segment.duration).toBeGreaterThan(0);
+  });
+
+  it('leaves segments that already have a distance untouched', () => {
+    const [from, to] = [
+      pin({ blockId: 'a', dayNumber: 1, latitude: 0, longitude: 0 }),
+      pin({ blockId: 'b', dayNumber: 1, latitude: 0, longitude: 1 }),
+    ];
+    const enriched = withEstimatedDistances([{ from, to, distance: 1234, duration: 60 }]);
+    expect(enriched[0]).toEqual({ from, to, distance: 1234, duration: 60 });
+  });
+
+  it('returns an empty list for no segments', () => {
+    expect(withEstimatedDistances([])).toEqual([]);
+  });
+});
+
+describe('formatDistance', () => {
+  it('uses meters below 1 km and kilometers above', () => {
+    expect(formatDistance(0)).toBe('0 m');
+    expect(formatDistance(450)).toBe('450 m');
+    expect(formatDistance(999)).toBe('999 m');
+    expect(formatDistance(1200)).toBe('1.2 km');
+    expect(formatDistance(18_400)).toBe('18 km');
+  });
+
+  it('returns an empty string for missing or invalid values', () => {
+    expect(formatDistance(null)).toBe('');
+    expect(formatDistance(Number.NaN)).toBe('');
+  });
+});
+
+describe('formatDuration', () => {
+  it('formats minutes and hours', () => {
+    expect(formatDuration(30)).toBe('1 min');
+    expect(formatDuration(600)).toBe('10 min');
+    expect(formatDuration(3600)).toBe('1 h');
+    expect(formatDuration(4800)).toBe('1 h 20 min');
+  });
+
+  it('returns an empty string for missing or invalid values', () => {
+    expect(formatDuration(null)).toBe('');
+    expect(formatDuration(Number.NaN)).toBe('');
+  });
+});
+
+describe('computePinsBounds', () => {
+  it('encloses all pins as [[south, west], [north, east]]', () => {
+    const bounds = computePinsBounds([
+      pin({ blockId: 'a', dayNumber: 1, latitude: 10, longitude: -5 }),
+      pin({ blockId: 'b', dayNumber: 1, latitude: -3, longitude: 40 }),
+      pin({ blockId: 'c', dayNumber: 2, latitude: 22, longitude: 12 }),
+    ]);
+    expect(bounds).toEqual([
+      [-3, -5],
+      [22, 40],
+    ]);
+  });
+
+  it('returns a degenerate box for a single pin', () => {
+    expect(computePinsBounds([pin({ blockId: 'solo', dayNumber: 1, latitude: 1, longitude: 2 })])).toEqual([
+      [1, 2],
+      [1, 2],
+    ]);
+  });
+
+  it('returns null when there are no pins', () => {
+    expect(computePinsBounds([])).toBeNull();
+  });
+
+  // Property-style check: every pin must fall inside the computed box.
+  it('property: all pins fall within the returned bounds', () => {
+    const pins = Array.from({ length: 25 }, (_, i) =>
+      pin({
+        blockId: `p${i}`,
+        dayNumber: (i % 4) + 1,
+        latitude: ((i * 7) % 170) - 85,
+        longitude: ((i * 23) % 350) - 175,
+      })
+    );
+    const bounds = computePinsBounds(pins)!;
+    const [[south, west], [north, east]] = bounds;
+    for (const p of pins) {
+      expect(p.latitude).toBeGreaterThanOrEqual(south);
+      expect(p.latitude).toBeLessThanOrEqual(north);
+      expect(p.longitude).toBeGreaterThanOrEqual(west);
+      expect(p.longitude).toBeLessThanOrEqual(east);
+    }
   });
 });

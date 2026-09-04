@@ -3,7 +3,7 @@ import * as presenceService from '../services/presence.service.js';
 
 /**
  * Registers presence-related socket event handlers.
- * Handles heartbeat, editing state, and cursor (day viewing) events.
+ * Handles heartbeat and editing state.
  * Join/leave are handled in the main socket index.ts since they tie into
  * the existing join:trip / disconnect lifecycle.
  */
@@ -46,31 +46,6 @@ export function registerPresenceHandlers(io: SocketIOServer, socket: Socket) {
       });
     } catch (error) {
       console.error('presence:editing error:', error);
-    }
-  });
-
-  /**
-   * presence:cursor — Updates which day the user is currently viewing.
-   * Broadcasts to the room so others can see "X is viewing Day N".
-   * Send { dayNumber: number }.
-   */
-  socket.on('presence:cursor', async (data: { dayNumber: number }) => {
-    try {
-      const tripId = socket.data.tripId as string | undefined;
-      if (!tripId) return;
-
-      const dayNumber = data?.dayNumber;
-      if (typeof dayNumber !== 'number') return;
-
-      await presenceService.setCursor(tripId, userId, dayNumber);
-
-      // Broadcast to room excluding sender
-      socket.to(`trip:${tripId}`).emit('presence:cursor', {
-        userId,
-        dayNumber,
-      });
-    } catch (error) {
-      console.error('presence:cursor error:', error);
     }
   });
 }

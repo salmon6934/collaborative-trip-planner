@@ -125,7 +125,10 @@ export function SortableBlock({
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-lg border-l-4 ${colors.border} bg-white p-3 shadow-sm transition ${
+      // Stable DOM id so other views (e.g. the map's "Go to Itinerary" link)
+      // can deep-link straight to this card.
+      id={`block-${block.id}`}
+      className={`scroll-mt-24 rounded-lg border-l-4 ${colors.border} bg-white p-3 shadow-sm transition ${
         isDragging ? 'opacity-50 shadow-lg' : 'hover:shadow-md'
       } ${dimmed ? 'opacity-40' : ''} ${selected ? 'ring-2 ring-indigo-400' : ''} ${
         lockedByName ? 'ring-1 ring-amber-300' : ''

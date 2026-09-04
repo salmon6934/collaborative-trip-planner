@@ -34,7 +34,6 @@ import {
   leave,
   heartbeat,
   setEditing,
-  setCursor,
   getOnlineMembers,
   setRedisClient,
 } from './presence.service.js';
@@ -61,7 +60,6 @@ describe('Presence Service', () => {
       expect(payload.userId).toBe('user-1');
       expect(payload.userName).toBe('Alice');
       expect(payload.avatarUrl).toBe('https://avatar.com/alice.png');
-      expect(payload.currentDay).toBeNull();
       expect(payload.editingBlockId).toBeNull();
       expect(payload.lastHeartbeat).toBeDefined();
 
@@ -94,7 +92,6 @@ describe('Presence Service', () => {
         userId: 'user-1',
         userName: 'Alice',
         avatarUrl: null,
-        currentDay: 2,
         editingBlockId: 'block-5',
         lastHeartbeat: '2025-01-01T00:00:00.000Z',
       };
@@ -114,7 +111,6 @@ describe('Presence Service', () => {
       // lastHeartbeat should be updated
       expect(payload.lastHeartbeat).not.toBe('2025-01-01T00:00:00.000Z');
       // Other fields should be preserved
-      expect(payload.currentDay).toBe(2);
       expect(payload.editingBlockId).toBe('block-5');
     });
 
@@ -135,7 +131,6 @@ describe('Presence Service', () => {
         userId: 'user-1',
         userName: 'Alice',
         avatarUrl: null,
-        currentDay: 1,
         editingBlockId: null,
         lastHeartbeat: '2025-01-01T00:00:00.000Z',
       };
@@ -156,7 +151,6 @@ describe('Presence Service', () => {
         userId: 'user-1',
         userName: 'Alice',
         avatarUrl: null,
-        currentDay: 1,
         editingBlockId: 'block-42',
         lastHeartbeat: '2025-01-01T00:00:00.000Z',
       };
@@ -178,37 +172,6 @@ describe('Presence Service', () => {
     });
   });
 
-  describe('setCursor', () => {
-    it('should update currentDay in the presence payload', async () => {
-      const existingPayload = {
-        userId: 'user-1',
-        userName: 'Alice',
-        avatarUrl: null,
-        currentDay: null,
-        editingBlockId: null,
-        lastHeartbeat: '2025-01-01T00:00:00.000Z',
-      };
-      mockGet.mockResolvedValueOnce(JSON.stringify(existingPayload));
-
-      await setCursor('trip-1', 'user-1', 3);
-
-      expect(mockGet).toHaveBeenCalledWith('presence:trip-1:user-1');
-      expect(mockSet).toHaveBeenCalledTimes(1);
-
-      const [, value] = mockSet.mock.calls[0];
-      const payload = JSON.parse(value);
-      expect(payload.currentDay).toBe(3);
-    });
-
-    it('should do nothing if presence key does not exist', async () => {
-      mockGet.mockResolvedValueOnce(null);
-
-      await setCursor('trip-1', 'user-1', 5);
-
-      expect(mockSet).not.toHaveBeenCalled();
-    });
-  });
-
   describe('getOnlineMembers', () => {
     it('should return empty array when no members are in the set', async () => {
       mockSmembers.mockResolvedValueOnce([]);
@@ -224,7 +187,6 @@ describe('Presence Service', () => {
         userId: 'user-1',
         userName: 'Alice',
         avatarUrl: null,
-        currentDay: 1,
         editingBlockId: null,
         lastHeartbeat: '2025-01-15T10:00:00.000Z',
       };
@@ -232,7 +194,6 @@ describe('Presence Service', () => {
         userId: 'user-2',
         userName: 'Bob',
         avatarUrl: 'https://avatar.com/bob.png',
-        currentDay: 2,
         editingBlockId: 'block-3',
         lastHeartbeat: '2025-01-15T10:00:05.000Z',
       };
@@ -259,7 +220,6 @@ describe('Presence Service', () => {
         userId: 'user-1',
         userName: 'Alice',
         avatarUrl: null,
-        currentDay: 1,
         editingBlockId: null,
         lastHeartbeat: '2025-01-15T10:00:00.000Z',
       };
@@ -309,7 +269,6 @@ describe('Presence Service', () => {
         userId: 'user-1',
         userName: 'Alice',
         avatarUrl: null,
-        currentDay: null,
         editingBlockId: null,
         lastHeartbeat: '2025-01-01T00:00:00.000Z',
       };

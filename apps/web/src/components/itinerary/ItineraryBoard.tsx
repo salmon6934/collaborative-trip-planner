@@ -145,6 +145,36 @@ export function ItineraryBoard() {
     fetchTrip();
   }, [fetchDays, fetchMembers, fetchTrip]);
 
+  /**
+   * Deep link support for `?block=<id>` (used by the map's "Go to Itinerary"
+   * link): once the days have loaded, expand the target block and scroll it
+   * into view. Runs once per block id so it doesn't fight the user afterwards.
+   */
+  const [deepLinkBlockId, setDeepLinkBlockId] = useState<string | null>(null);
+  useEffect(() => {
+    // Read from `location` rather than `useSearchParams` so this client
+    // component doesn't need a Suspense boundary at build time.
+    setDeepLinkBlockId(new URLSearchParams(window.location.search).get('block'));
+  }, []);
+
+  const handledDeepLinkRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!deepLinkBlockId || loading) return;
+    if (handledDeepLinkRef.current === deepLinkBlockId) return;
+
+    const exists = days.some((day) => day.blocks.some((b) => b.id === deepLinkBlockId));
+    if (!exists) return;
+
+    handledDeepLinkRef.current = deepLinkBlockId;
+    setExpandedBlockId(deepLinkBlockId);
+    // Wait a frame so the expanded card is laid out before scrolling.
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`block-${deepLinkBlockId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    });
+  }, [deepLinkBlockId, loading, days]);
+
   // Socket connection with auto-reconnect + resync
   const { socket, status } = useSocket({ tripId, token, onReconnect: fetchDays });
 

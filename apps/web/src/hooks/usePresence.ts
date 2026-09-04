@@ -9,7 +9,6 @@ export interface PresenceInfo {
   userId: string;
   userName: string;
   avatarUrl: string | null;
-  currentDay: number | null;
   editingBlockId: string | null;
   lastHeartbeat: string;
 }
@@ -50,7 +49,6 @@ export function usePresence({ socket, tripId, currentUserId }: UsePresenceOption
             userId: data.userId,
             userName: data.userName,
             avatarUrl: data.avatarUrl,
-            currentDay: null,
             editingBlockId: null,
             lastHeartbeat: new Date().toISOString(),
           },

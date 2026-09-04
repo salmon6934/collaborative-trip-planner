@@ -6,7 +6,6 @@ export interface PresenceInfo {
   userId: string;
   userName: string;
   avatarUrl: string | null;
-  currentDay: number | null;
   editingBlockId: string | null;
   lastHeartbeat: string; // ISO string for JSON serialization
 }
@@ -67,7 +66,6 @@ export async function join(
     userId,
     userName,
     avatarUrl,
-    currentDay: null,
     editingBlockId: null,
     lastHeartbeat: new Date().toISOString(),
   };
@@ -126,27 +124,6 @@ export async function setEditing(
 
   const payload: PresenceInfo = JSON.parse(existing);
   payload.editingBlockId = blockId;
-  payload.lastHeartbeat = new Date().toISOString();
-
-  await redis.set(key, JSON.stringify(payload), 'EX', PRESENCE_TTL);
-}
-
-/**
- * Updates which day a user is currently viewing.
- */
-export async function setCursor(
-  tripId: string,
-  userId: string,
-  dayNumber: number
-): Promise<void> {
-  const redis = getRedisClient();
-  const key = presenceKey(tripId, userId);
-
-  const existing = await redis.get(key);
-  if (!existing) return;
-
-  const payload: PresenceInfo = JSON.parse(existing);
-  payload.currentDay = dayNumber;
   payload.lastHeartbeat = new Date().toISOString();
 
   await redis.set(key, JSON.stringify(payload), 'EX', PRESENCE_TTL);

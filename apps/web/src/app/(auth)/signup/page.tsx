@@ -1,9 +1,12 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+
+import { AvatarPicker } from '@/components/ui/avatar-picker';
+import { AVATARS } from '@/lib/avatars';
 
 export default function SignupPage() {
   return (
@@ -22,8 +25,16 @@ function SignupForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [avatarId, setAvatarId] = useState(AVATARS[0].id);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Randomly assign a default avatar on mount rather than during render: a
+  // random value picked while rendering would differ between the server-rendered
+  // HTML and the first client render, which React reports as a hydration error.
+  useEffect(() => {
+    setAvatarId(AVATARS[Math.floor(Math.random() * AVATARS.length)].id);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,7 +46,7 @@ function SignupForm() {
       const signupRes = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, avatarId }),
       });
 
       if (!signupRes.ok) {
@@ -75,6 +86,14 @@ function SignupForm() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        <AvatarPicker
+          avatars={AVATARS}
+          selectedId={avatarId}
+          onSelect={(avatar) => setAvatarId(avatar.id)}
+          username={name.trim() || 'Your name'}
+          subtitle="Pick your avatar — you can change it later"
+        />
+
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">
             Name

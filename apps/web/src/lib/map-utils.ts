@@ -23,6 +23,8 @@ export interface MapPin {
   dayNumber: number;
   /** Start time as "HH:mm" (24h), or null when unscheduled. */
   startTime: string | null;
+  /** End time as "HH:mm" (24h), or null when open-ended. */
+  endTime?: string | null;
 }
 
 /** A directed connection between two consecutive pins within the same day. */
@@ -47,6 +49,7 @@ export interface BlockLike {
   latitude: number | null;
   longitude: number | null;
   startTime: string | null;
+  endTime?: string | null;
   /** The day this block belongs to. */
   dayNumber: number;
 }
@@ -145,6 +148,7 @@ export function toMapPins(blocks: BlockLike[]): MapPin[] {
       category: block.category,
       dayNumber: block.dayNumber,
       startTime: block.startTime,
+      endTime: block.endTime ?? null,
     });
   }
   return pins;
@@ -225,6 +229,108 @@ export function buildRouteSegments(pins: MapPin[]): RouteSegment[] {
     }
   }
   return segments;
+}
+
+/** Mean earth radius in meters, used by the haversine distance estimate. */
+const EARTH_RADIUS_M = 6_371_008.8;
+
+/**
+ * Average travel speed (m/s) used to turn a straight-line distance into a rough
+ * duration estimate. ~20 km/h approximates mixed walking/city transit and keeps
+ * the estimate conservative until a real routing API is wired in.
+ */
+const ESTIMATED_SPEED_MPS = 20_000 / 3600;
+
+const toRadians = (deg: number): number => (deg * Math.PI) / 180;
+
+/** Any object carrying a latitude/longitude pair. */
+export interface LatLngLike {
+  latitude: number;
+  longitude: number;
+}
+
+/**
+ * Great-circle ("as the crow flies") distance between two coordinates in
+ * meters, via the haversine formula. This is a straight-line estimate — it
+ * ignores roads, terrain and one-way streets.
+ */
+export function haversineDistanceMeters(from: LatLngLike, to: LatLngLike): number {
+  const lat1 = toRadians(from.latitude);
+  const lat2 = toRadians(to.latitude);
+  const dLat = lat2 - lat1;
+  const dLng = toRadians(to.longitude - from.longitude);
+
+  const sinLat = Math.sin(dLat / 2);
+  const sinLng = Math.sin(dLng / 2);
+  const a = sinLat * sinLat + Math.cos(lat1) * Math.cos(lat2) * sinLng * sinLng;
+  // clamp guards against tiny FP overshoot before asin/sqrt
+  const c = 2 * Math.asin(Math.min(1, Math.sqrt(a)));
+  return EARTH_RADIUS_M * c;
+}
+
+/**
+ * Fills in straight-line distance (and a rough duration) on route segments that
+ * don't have them yet. Segments already enriched by a routing API are returned
+ * untouched, so this can safely run over mixed data.
+ */
+export function withEstimatedDistances(segments: RouteSegment[]): RouteSegment[] {
+  return segments.map((segment) => {
+    if (segment.distance != null) return segment;
+    const distance = haversineDistanceMeters(segment.from, segment.to);
+    return {
+      ...segment,
+      distance,
+      duration: segment.duration ?? Math.round(distance / ESTIMATED_SPEED_MPS),
+    };
+  });
+}
+
+/**
+ * Formats a distance in meters for display: "450 m", "1.2 km", "18 km".
+ */
+export function formatDistance(meters: number | null): string {
+  if (meters == null || !Number.isFinite(meters)) return '';
+  if (meters < 1000) return `${Math.round(meters)} m`;
+  const km = meters / 1000;
+  return `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
+}
+
+/**
+ * Formats a duration in seconds for display: "8 min", "1 h 20 min".
+ */
+export function formatDuration(seconds: number | null): string {
+  if (seconds == null || !Number.isFinite(seconds)) return '';
+  const totalMinutes = Math.max(1, Math.round(seconds / 60));
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes === 0 ? `${hours} h` : `${hours} h ${minutes} min`;
+}
+
+/** Bounding box as [[southLat, westLng], [northLat, eastLng]]. */
+export type LatLngBoundsTuple = [[number, number], [number, number]];
+
+/**
+ * Computes the bounding box enclosing all pins, for auto-fitting the map view.
+ * Returns null when there are no pins. A single pin yields a degenerate box —
+ * callers should pair `fitBounds` with a max zoom.
+ */
+export function computePinsBounds(pins: MapPin[]): LatLngBoundsTuple | null {
+  if (pins.length === 0) return null;
+  let south = pins[0].latitude;
+  let north = pins[0].latitude;
+  let west = pins[0].longitude;
+  let east = pins[0].longitude;
+  for (const pin of pins) {
+    if (pin.latitude < south) south = pin.latitude;
+    if (pin.latitude > north) north = pin.latitude;
+    if (pin.longitude < west) west = pin.longitude;
+    if (pin.longitude > east) east = pin.longitude;
+  }
+  return [
+    [south, west],
+    [north, east],
+  ];
 }
 
 /**

@@ -86,7 +86,6 @@ export interface PresenceInfo {
   userId: string;
   userName: string;
   avatarUrl: string | null;
-  currentDay: number | null;
   editingBlockId: string | null;
   lastHeartbeat: Date;
 }
@@ -94,7 +93,6 @@ export interface PresenceInfo {
 export type PresenceEvent =
   | { type: 'presence:join'; userId: string; tripId: string }
   | { type: 'presence:leave'; userId: string; tripId: string }
-  | { type: 'presence:cursor'; userId: string; tripId: string; dayNumber: number }
   | { type: 'presence:editing'; userId: string; tripId: string; blockId: string | null };
 
 // Voting
@@ -224,7 +222,6 @@ export interface SocketEventMap {
   // Presence events
   'presence:join': { userId: string; userName: string; avatarUrl: string | null };
   'presence:leave': { userId: string };
-  'presence:cursor': { userId: string; dayNumber: number };
   'presence:editing': { userId: string; blockId: string | null };
 
   // Expense events

@@ -1,3 +1,8 @@
+import {
+  getAvatarDataUri,
+  isValidAvatarId,
+  pickAvatarIdForSeed,
+} from '@trip-planner/shared';
 import { Router, Request, Response, RequestHandler } from 'express';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
@@ -16,7 +21,7 @@ const SALT_ROUNDS = 12;
  */
 router.post('/signup', validate(signupSchema) as RequestHandler, async (req: Request, res: Response) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, avatarId } = req.body;
 
     // Check if user already exists
     const existingUser = await db
@@ -36,6 +41,19 @@ router.post('/signup', validate(signupSchema) as RequestHandler, async (req: Req
     // Hash the password
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
+    // Assign a default profile avatar. Prefer the one picked in the signup form;
+    // otherwise derive a stable one from the email so every account still gets an
+    // avatar (e.g. accounts created without going through the form).
+    //
+    // The chosen avatar is stored as an inline SVG data URI in the existing
+    // avatar_url column. That needs no schema change and means every surface that
+    // already renders avatar_url (nav bar, member lists, presence indicators,
+    // itinerary "added by") picks it up with no further changes.
+    const resolvedAvatarId = isValidAvatarId(avatarId)
+      ? avatarId
+      : pickAvatarIdForSeed(email.toLowerCase());
+    const avatarUrl = getAvatarDataUri(resolvedAvatarId);
+
     // Insert the new user
     const [newUser] = await db
       .insert(users)
@@ -43,6 +61,7 @@ router.post('/signup', validate(signupSchema) as RequestHandler, async (req: Req
         email,
         name,
         passwordHash,
+        avatarUrl,
       })
       .returning({
         id: users.id,

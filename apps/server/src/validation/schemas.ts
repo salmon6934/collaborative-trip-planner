@@ -1,3 +1,4 @@
+import { MIN_AVATAR_ID, MAX_AVATAR_ID } from '@trip-planner/shared';
 import { z } from 'zod';
 
 // Reusable base schemas
@@ -10,6 +11,15 @@ export const signupSchema = z.object({
   email: emailSchema,
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(1, 'Name is required').max(100),
+  // Optional id of a default avatar chosen in the signup form. Only an integer
+  // is accepted — the server resolves it to SVG markup from the trusted local
+  // set, so no client-supplied URL or markup is ever persisted.
+  avatarId: z
+    .number()
+    .int()
+    .min(MIN_AVATAR_ID)
+    .max(MAX_AVATAR_ID)
+    .optional(),
 });
 
 export const loginSchema = z.object({
