@@ -145,7 +145,7 @@ export function AvatarPicker({
                 },
               },
             }}
-            className="bg-gradient-to-r from-primary/20 to-primary/10 w-full"
+            className="bg-gradient-to-r from-primary/25 to-secondary/20 w-full"
           />
 
           <div className="px-8 pb-8 -mt-16">

@@ -10,7 +10,7 @@ import { AVATARS } from '@/lib/avatars';
 
 export default function SignupPage() {
   return (
-    <Suspense fallback={<div className="rounded-xl bg-white p-8 shadow-lg" />}>
+    <Suspense fallback={<div className="rounded-2xl bg-card p-8 shadow-lg" />}>
       <SignupForm />
     </Suspense>
   );
@@ -76,11 +76,11 @@ function SignupForm() {
   }
 
   return (
-    <div className="rounded-xl bg-white p-8 shadow-lg">
-      <h2 className="mb-6 text-2xl font-semibold text-gray-900">Create an account</h2>
+    <div className="rounded-2xl bg-card p-8 shadow-lg">
+      <h2 className="mb-6 text-2xl font-semibold text-foreground">Create an account</h2>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+        <div className="mb-4 rounded-lg bg-danger-tint p-3 text-sm text-danger">
           {error}
         </div>
       )}
@@ -95,7 +95,7 @@ function SignupForm() {
         />
 
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="name" className="block text-sm font-medium text-foreground">
             Name
           </label>
           <input
@@ -104,13 +104,13 @@ function SignupForm() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             placeholder="Your name"
           />
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="block text-sm font-medium text-foreground">
             Email
           </label>
           <input
@@ -119,13 +119,13 @@ function SignupForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             placeholder="you@example.com"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="password" className="block text-sm font-medium text-foreground">
             Password
           </label>
           <input
@@ -135,7 +135,7 @@ function SignupForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={8}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             placeholder="At least 8 characters"
           />
         </div>
@@ -143,17 +143,17 @@ function SignupForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+          className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
         >
           {loading ? 'Creating account...' : 'Sign up'}
         </button>
       </form>
 
-      <div className="mt-6 text-center text-sm text-gray-600">
+      <div className="mt-6 text-center text-sm text-muted-foreground">
         Already have an account?{' '}
         <Link
           href={rawCallback ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/login'}
-          className="font-medium text-indigo-600 hover:text-indigo-500"
+          className="font-medium text-primary hover:text-primary-hover"
         >
           Sign in
         </Link>

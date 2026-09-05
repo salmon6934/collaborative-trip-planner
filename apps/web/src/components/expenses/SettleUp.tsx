@@ -33,9 +33,9 @@ export function SettleUp({
 
   if (!summary || suggested.length === 0) {
     return (
-      <div className="rounded-xl border-2 border-dashed border-gray-300 bg-white p-12 text-center">
+      <div className="rounded-2xl border-2 border-dashed border-border bg-card p-12 text-center">
         <svg
-          className="mx-auto h-12 w-12 text-green-400"
+          className="mx-auto h-12 w-12 text-success"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -47,8 +47,8 @@ export function SettleUp({
             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <h3 className="mt-4 text-sm font-medium text-gray-900">All settled up</h3>
-        <p className="mt-1 text-sm text-gray-500">
+        <h3 className="mt-4 text-sm font-medium text-foreground">All settled up</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
           There are no outstanding balances between members.
         </p>
       </div>
@@ -67,7 +67,7 @@ export function SettleUp({
     <div className="space-y-6">
       {mine.length > 0 && (
         <section>
-          <h3 className="text-sm font-medium uppercase tracking-wide text-gray-500">
+          <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
             Your balances
           </h3>
           <div className="mt-3 space-y-2">
@@ -77,21 +77,21 @@ export function SettleUp({
               return (
                 <div
                   key={`${t.from}-${t.to}-${i}`}
-                  className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm"
                 >
-                  <p className="text-sm text-gray-800">
+                  <p className="text-sm text-foreground">
                     {youOwe ? (
                       <>
                         You owe{' '}
                         <span className="font-medium">{nameFor(other)}</span>{' '}
-                        <span className="font-semibold text-red-600">
+                        <span className="font-semibold text-danger">
                           {formatMoney(t.amountMinor, currency)}
                         </span>
                       </>
                     ) : (
                       <>
                         <span className="font-medium">{nameFor(other)}</span> owes you{' '}
-                        <span className="font-semibold text-green-600">
+                        <span className="font-semibold text-success">
                           {formatMoney(t.amountMinor, currency)}
                         </span>
                       </>
@@ -107,7 +107,7 @@ export function SettleUp({
                           currency,
                         })
                       }
-                      className="whitespace-nowrap rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 transition"
+                      className="whitespace-nowrap rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-hover transition"
                     >
                       Record Payment
                     </button>
@@ -121,19 +121,19 @@ export function SettleUp({
 
       {others.length > 0 && (
         <section>
-          <h3 className="text-sm font-medium uppercase tracking-wide text-gray-500">
+          <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
             Other balances
           </h3>
           <div className="mt-3 space-y-2">
             {others.map((t, i) => (
               <div
                 key={`${t.from}-${t.to}-${i}`}
-                className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm"
               >
-                <p className="text-sm text-gray-800">
+                <p className="text-sm text-foreground">
                   <span className="font-medium">{nameFor(t.from)}</span> owes{' '}
                   <span className="font-medium">{nameFor(t.to)}</span>{' '}
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-foreground">
                     {formatMoney(t.amountMinor, currency)}
                   </span>
                 </p>
@@ -147,7 +147,7 @@ export function SettleUp({
                         currency,
                       })
                     }
-                    className="whitespace-nowrap rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+                    className="whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition"
                   >
                     Record Payment
                   </button>
@@ -160,22 +160,22 @@ export function SettleUp({
 
       {/* Per-member net balances */}
       <section>
-        <h3 className="text-sm font-medium uppercase tracking-wide text-gray-500">
+        <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
           Net balances
         </h3>
-        <div className="mt-3 divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
+        <div className="mt-3 divide-y divide-border rounded-2xl border border-border bg-card">
           {summary.memberBalances.map((b) => (
             <div key={b.userId} className="flex items-center justify-between px-4 py-2.5">
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-foreground">
                 {b.userId === currentUserId ? 'You' : nameFor(b.userId)}
               </span>
               <span
                 className={`text-sm font-medium ${
                   b.balanceMinor > 0
-                    ? 'text-green-600'
+                    ? 'text-success'
                     : b.balanceMinor < 0
-                      ? 'text-red-600'
-                      : 'text-gray-500'
+                      ? 'text-danger'
+                      : 'text-muted-foreground'
                 }`}
               >
                 {formatSignedMoney(b.balanceMinor, currency)}

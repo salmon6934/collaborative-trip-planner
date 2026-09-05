@@ -59,16 +59,16 @@ export interface BlockLike {
  * first several days. Chosen to remain distinguishable on an OSM basemap.
  */
 const DAY_COLOR_PALETTE: string[] = [
-  '#e6194b', // red
-  '#3cb44b', // green
-  '#4363d8', // blue
-  '#f58231', // orange
-  '#911eb4', // purple
-  '#008080', // teal
-  '#f032e6', // magenta
+  '#c13a28', // terracotta (primary)
+  '#b8912e', // mustard gold (secondary)
+  '#b0744a', // terracotta brown (travel)
+  '#1e9e72', // teal green (success)
+  '#4c463c', // warm charcoal (stay)
+  '#7c5cbf', // muted violet
+  '#2f7fae', // dusty blue
+  '#c2557a', // dusty rose
+  '#6b8e23', // olive
   '#9a6324', // brown
-  '#808000', // olive
-  '#000075', // navy
 ];
 
 /**

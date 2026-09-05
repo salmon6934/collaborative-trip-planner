@@ -19,6 +19,11 @@ interface LogoProps {
   markOnly?: boolean;
   /** Tailwind classes for the wordmark text. */
   textClassName?: string;
+  /**
+   * Optional small-caps, letter-spaced line rendered under the wordmark
+   * (e.g. "TRIP MAP", "SHARED EXPENSES") — the Wayfarer subtitle pattern.
+   */
+  subtitle?: string;
   className?: string;
 }
 
@@ -26,11 +31,12 @@ export function Logo({
   size = 32,
   href,
   markOnly = false,
-  textClassName = 'text-xl font-bold text-indigo-600',
+  textClassName = 'font-display text-xl font-bold leading-none text-foreground',
+  subtitle,
   className,
 }: LogoProps) {
   const content = (
-    <span className={`inline-flex items-center gap-2 ${className ?? ''}`}>
+    <span className={`inline-flex items-center gap-2.5 ${className ?? ''}`}>
       <Image
         src="/brand/mark.png"
         alt={markOnly ? 'TripSync' : ''}
@@ -44,7 +50,12 @@ export function Logo({
         // announce the brand name twice.
         aria-hidden={markOnly ? undefined : true}
       />
-      {!markOnly && <span className={textClassName}>TripSync</span>}
+      {!markOnly && (
+        <span className="flex flex-col gap-1">
+          <span className={textClassName}>TripSync</span>
+          {subtitle && <span className="eyebrow">{subtitle}</span>}
+        </span>
+      )}
     </span>
   );
 

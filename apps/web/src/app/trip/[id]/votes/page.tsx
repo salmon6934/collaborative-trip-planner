@@ -85,7 +85,7 @@ export default function TripVotesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-tint border-t-primary" />
       </div>
     );
   }
@@ -95,15 +95,15 @@ export default function TripVotesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Votes</h2>
-          <p className="mt-1 text-sm text-gray-600">
+          <h2 className="text-xl font-semibold text-foreground">Votes</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             Create polls and vote on activities with your group.
           </p>
         </div>
         {!showCreateForm && (
           <button
             onClick={() => setShowCreateForm(true)}
-            className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -127,7 +127,7 @@ export default function TripVotesPage() {
       {/* Active Polls */}
       {activePolls.length > 0 && (
         <section className="mt-8">
-          <h3 className="text-sm font-medium uppercase tracking-wide text-gray-500">
+          <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
             Active Polls ({activePolls.length})
           </h3>
           <div className="mt-3 space-y-4">
@@ -152,7 +152,7 @@ export default function TripVotesPage() {
       {/* Resolved Polls */}
       {resolvedPolls.length > 0 && (
         <section className="mt-8">
-          <h3 className="text-sm font-medium uppercase tracking-wide text-gray-500">
+          <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
             Resolved Polls ({resolvedPolls.length})
           </h3>
           <div className="mt-3 space-y-4">
@@ -176,9 +176,9 @@ export default function TripVotesPage() {
 
       {/* Empty State */}
       {polls.length === 0 && !showCreateForm && (
-        <div className="mt-8 rounded-xl border-2 border-dashed border-gray-300 bg-white p-12 text-center">
+        <div className="mt-8 rounded-2xl border-2 border-dashed border-border bg-card p-12 text-center">
           <svg
-            className="mx-auto h-12 w-12 text-gray-400"
+            className="mx-auto h-12 w-12 text-muted-foreground"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -190,13 +190,13 @@ export default function TripVotesPage() {
               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
             />
           </svg>
-          <h3 className="mt-4 text-sm font-medium text-gray-900">No polls yet</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <h3 className="mt-4 text-sm font-medium text-foreground">No polls yet</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
             Create a poll to let your group vote on activities, restaurants, or anything else.
           </p>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition"
           >
             Create your first poll
           </button>

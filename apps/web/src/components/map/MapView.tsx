@@ -60,7 +60,7 @@ export interface MapViewProps {
 /** Fallback center when there are neither pins nor a destination (mid-world). */
 const DEFAULT_CENTER: [number, number] = [20, 0];
 const DEFAULT_ZOOM = 13;
-const FALLBACK_COLOR = '#4363d8';
+const FALLBACK_COLOR = '#c13a28'; // --color-primary
 /** Keeps `fitBounds` from zooming all the way in on a single pin. */
 const MAX_FIT_ZOOM = 15;
 
@@ -170,9 +170,16 @@ export function MapView({
       />
       <FitToPins pins={pins} enabled={fitEnabled} />
 
+      {/*
+        Warm-toned CARTO "Voyager" basemap — no API key required, and its soft
+        cream/terracotta cartography matches the Wayfarer reference far better
+        than standard OSM. A keyed Stadia/MapTiler style (e.g. a watercolor
+        look) could be swapped in later via env once a key is available.
+      */}
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+        subdomains="abcd"
       />
 
       {routes.map((segment) => {
@@ -186,14 +193,14 @@ export function MapView({
               [segment.from.latitude, segment.from.longitude],
               [segment.to.latitude, segment.to.longitude],
             ]}
-            pathOptions={{ color, weight: 3, opacity: 0.7 }}
+            pathOptions={{ color, weight: 4, opacity: 0.85 }}
           >
             {distance && (
               <Tooltip sticky>
                 <span className="text-xs">
                   ~{distance}
                   {duration ? ` · ${duration}` : ''}
-                  <span className="text-gray-500"> (straight line)</span>
+                  <span className="text-muted-foreground"> (straight line)</span>
                 </span>
               </Tooltip>
             )}
@@ -216,11 +223,11 @@ export function MapView({
           >
             <Popup>
               <div className="min-w-[180px] text-sm">
-                <p className="flex items-center gap-1.5 font-semibold text-gray-900">
+                <p className="flex items-center gap-1.5 font-semibold text-foreground">
                   <span aria-hidden="true">{CATEGORY_ICONS[pin.category]}</span>
                   {pin.title}
                 </p>
-                <p className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
+                <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <span
                     className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: color }}
@@ -228,11 +235,11 @@ export function MapView({
                   />
                   Day {pin.dayNumber} · {formatTimeSlot(pin, tzAbbrev)}
                 </p>
-                <p className="mt-0.5 text-xs capitalize text-gray-400">{pin.category}</p>
+                <p className="mt-0.5 text-xs capitalize text-muted-foreground">{pin.category}</p>
                 {itineraryHref && (
                   <Link
                     href={itineraryHref(pin.blockId)}
-                    className="mt-2 inline-block text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                    className="mt-2 inline-block text-xs font-medium text-primary hover:text-primary-tint-foreground"
                   >
                     Go to Itinerary →
                   </Link>

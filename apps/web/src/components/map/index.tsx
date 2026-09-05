@@ -17,7 +17,7 @@ export type { MapPin, RouteSegment } from '@/lib/map-utils';
 export const MapView = dynamic(() => import('./MapView').then((mod) => mod.MapView), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full w-full items-center justify-center bg-gray-100 text-sm text-gray-400">
+    <div className="flex h-full w-full items-center justify-center bg-muted text-sm text-muted-foreground">
       Loading map…
     </div>
   ),

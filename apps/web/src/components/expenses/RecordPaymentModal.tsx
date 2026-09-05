@@ -76,20 +76,20 @@ export function RecordPaymentModal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
-        <h3 className="text-lg font-semibold text-gray-900">Record Payment</h3>
-        <p className="mt-1 text-sm text-gray-600">
-          <span className="font-medium text-gray-800">{fromName}</span> pays{' '}
-          <span className="font-medium text-gray-800">{toName}</span>
+      <div className="w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl">
+        <h3 className="text-lg font-semibold text-foreground">Record Payment</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">{fromName}</span> pays{' '}
+          <span className="font-medium text-foreground">{toName}</span>
         </p>
 
         {error && (
-          <div className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+          <div className="mt-3 rounded-lg bg-danger-tint p-3 text-sm text-danger">{error}</div>
         )}
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label htmlFor="payment-amount" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="payment-amount" className="block text-sm font-medium text-foreground">
               Amount
             </label>
             <input
@@ -99,15 +99,15 @@ export function RecordPaymentModal({
               min="0"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               Suggested: {formatMoney(draft.amountMinor, draft.currency)} · partial payments allowed
             </p>
           </div>
 
           <div>
-            <label htmlFor="payment-note" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="payment-note" className="block text-sm font-medium text-foreground">
               Note (optional)
             </label>
             <input
@@ -117,7 +117,7 @@ export function RecordPaymentModal({
               onChange={(e) => setNote(e.target.value)}
               placeholder="Paid via UPI"
               maxLength={500}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -125,14 +125,14 @@ export function RecordPaymentModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? 'Recording…' : 'Record Payment'}
             </button>

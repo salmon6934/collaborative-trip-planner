@@ -27,6 +27,11 @@ export const trips = pgTable('trips', {
   id: uuid('id').primaryKey().defaultRandom(),
   title: text('title').notNull(),
   destination: text('destination').notNull(),
+  // Resolved center of `destination` via geocoding, captured at trip creation.
+  // Nullable: trips created before this existed (and any without a geocodable
+  // pick) simply fall back to resolving the destination string at search time.
+  destinationLat: real('destination_lat'),
+  destinationLng: real('destination_lng'),
   startDate: date('start_date').notNull(),
   endDate: date('end_date').notNull(),
   createdBy: uuid('created_by')

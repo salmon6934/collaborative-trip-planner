@@ -46,19 +46,29 @@ export function ExpenseCard({
     : null;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold text-gray-900">{expense.title}</h3>
-          <p className="mt-0.5 text-sm text-gray-600">
-            Paid by <span className="font-medium text-gray-800">{payerLabel}</span>
+        <div className="flex min-w-0 items-start gap-3">
+          {/* Leading icon tile — echoes the reference's category tile. Expenses
+              carry no category field (only an optional linked activity), so this
+              is a neutral marker rather than category-coded. */}
+          <span
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-tint text-lg"
+            aria-hidden="true"
+          >
+            🧾
+          </span>
+          <div className="min-w-0">
+          <h3 className="truncate text-base font-semibold text-foreground">{expense.title}</h3>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Paid by <span className="font-medium text-foreground">{payerLabel}</span>
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+            <span className="inline-flex items-center rounded-full bg-primary-tint px-2 py-0.5 text-xs font-medium text-primary-tint-foreground">
               {SPLIT_LABELS[expense.splitType] ?? expense.splitType} split
             </span>
             {linkedBlockName && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                 <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
@@ -71,17 +81,18 @@ export function ExpenseCard({
               </span>
             )}
           </div>
+          </div>
         </div>
 
         <div className="flex flex-col items-end gap-2">
-          <span className="whitespace-nowrap text-lg font-semibold text-gray-900">
+          <span className="stat-number whitespace-nowrap text-lg text-foreground">
             {formatMoney(expense.amountMinor, expense.currency)}
           </span>
           {canManage && (
             <div className="flex items-center gap-1">
               <button
                 onClick={onEdit}
-                className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-indigo-600"
+                className="rounded-md p-1.5 text-muted-foreground transition hover:bg-muted hover:text-primary"
                 title="Edit expense"
                 aria-label="Edit expense"
               >
@@ -96,7 +107,7 @@ export function ExpenseCard({
               </button>
               <button
                 onClick={onDelete}
-                className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-red-600"
+                className="rounded-md p-1.5 text-muted-foreground transition hover:bg-muted hover:text-danger"
                 title="Delete expense"
                 aria-label="Delete expense"
               >

@@ -143,7 +143,7 @@ export default function TripExpensesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-tint border-t-primary" />
       </div>
     );
   }
@@ -153,15 +153,15 @@ export default function TripExpensesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Expenses</h2>
-          <p className="mt-1 text-sm text-gray-600">
+          <h2 className="text-xl font-semibold text-foreground">Expenses</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             Track expenses and split costs with your trip members.
           </p>
         </div>
         {canManage && (
           <button
             onClick={openCreate}
-            className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -172,28 +172,28 @@ export default function TripExpensesPage() {
       </div>
 
       {/* Running total banner */}
-      <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 p-5 text-white shadow-sm">
+      <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 rounded-2xl bg-gradient-to-r from-primary to-primary-hover p-5 text-white shadow-sm">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-indigo-100">Trip total</p>
-          <p className="text-2xl font-bold">
+          <p className="eyebrow text-primary-tint">Trip total</p>
+          <p className="stat-number text-2xl">
             {formatMoney(summary?.totalMinor ?? 0, tripCurrency)}
           </p>
         </div>
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-indigo-100">Your net</p>
-          <p className="text-2xl font-bold">{formatSignedMoney(myNet, tripCurrency)}</p>
-          <p className="text-xs text-indigo-100">
+          <p className="eyebrow text-primary-tint">Your net</p>
+          <p className="stat-number text-2xl">{formatSignedMoney(myNet, tripCurrency)}</p>
+          <p className="text-xs text-primary-tint">
             {myNet > 0 ? "you're owed" : myNet < 0 ? 'you owe' : 'all settled'}
           </p>
         </div>
       </div>
 
       {/* Segmented control */}
-      <div className="mt-6 inline-flex rounded-lg border border-gray-200 bg-white p-1">
+      <div className="mt-6 inline-flex rounded-lg border border-border bg-card p-1">
         <button
           onClick={() => setView('expenses')}
           className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${
-            view === 'expenses' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-gray-900'
+            view === 'expenses' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           Expenses ({expenses.length})
@@ -201,7 +201,7 @@ export default function TripExpensesPage() {
         <button
           onClick={() => setView('settle')}
           className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${
-            view === 'settle' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-gray-900'
+            view === 'settle' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           Settle Up ({suggested.length})
@@ -212,9 +212,9 @@ export default function TripExpensesPage() {
       {view === 'expenses' && (
         <div className="mt-4">
           {expenses.length === 0 ? (
-            <div className="rounded-xl border-2 border-dashed border-gray-300 bg-white p-12 text-center">
+            <div className="rounded-2xl border-2 border-dashed border-border bg-card p-12 text-center">
               <svg
-                className="mx-auto h-12 w-12 text-gray-400"
+                className="mx-auto h-12 w-12 text-muted-foreground"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -226,14 +226,14 @@ export default function TripExpensesPage() {
                   d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m3 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H10a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
                 />
               </svg>
-              <h3 className="mt-4 text-sm font-medium text-gray-900">No expenses yet</h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <h3 className="mt-4 text-sm font-medium text-foreground">No expenses yet</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
                 Add your first expense to start splitting costs with the group.
               </p>
               {canManage && (
                 <button
                   onClick={openCreate}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition"
                 >
                   Add your first expense
                 </button>

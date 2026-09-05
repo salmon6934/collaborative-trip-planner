@@ -32,13 +32,13 @@ export function DayFilter({
   const allVisible = days.every((d) => visibleDays.has(d.dayNumber));
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div className="rounded-2xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-900">Days</h3>
+        <h3 className="text-sm font-semibold text-foreground">Days</h3>
         <button
           type="button"
           onClick={allVisible ? onShowNone : onShowAll}
-          className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+          className="text-xs font-medium text-primary hover:text-primary-tint-foreground"
         >
           {allVisible ? 'Hide all' : 'Show all'}
         </button>
@@ -49,12 +49,12 @@ export function DayFilter({
           const checked = visibleDays.has(day.dayNumber);
           return (
             <li key={day.dayNumber}>
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
                 <input
                   type="checkbox"
                   checked={checked}
                   onChange={() => onToggleDay(day.dayNumber)}
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
                 />
                 <span
                   className="inline-block h-3 w-3 shrink-0 rounded-full ring-1 ring-white"
@@ -62,7 +62,7 @@ export function DayFilter({
                   aria-hidden="true"
                 />
                 <span className="flex-1">Day {day.dayNumber}</span>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-muted-foreground">
                   {day.pinCount} {day.pinCount === 1 ? 'pin' : 'pins'}
                 </span>
               </label>

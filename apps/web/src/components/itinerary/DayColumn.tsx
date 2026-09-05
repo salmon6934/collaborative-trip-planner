@@ -51,18 +51,18 @@ export function DayColumn({
   return (
     <div
       id={`day-col-${dayId}`}
-      className="flex w-72 flex-shrink-0 scroll-mt-4 flex-col rounded-xl border border-gray-200 bg-gray-50"
+      className="flex w-72 flex-shrink-0 scroll-mt-4 flex-col rounded-2xl border border-border bg-muted"
     >
       {/* Day header */}
-      <div className="flex items-center justify-between rounded-t-xl border-b border-gray-200 bg-white px-4 py-3">
+      <div className="flex items-center justify-between rounded-t-2xl border-b border-border bg-card px-4 py-3">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Day {dayNumber}</h3>
-          <p className="text-xs text-gray-500">{formatDayLabel(date)}</p>
+          <h3 className="text-sm font-semibold text-foreground">Day {dayNumber}</h3>
+          <p className="text-xs text-muted-foreground">{formatDayLabel(date)}</p>
         </div>
         {canEdit && (
           <button
             onClick={() => onAddActivity(dayId)}
-            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
             aria-label={`Add activity to day ${dayNumber}`}
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,7 +75,7 @@ export function DayColumn({
       {/* Droppable area with blocks */}
       <div
         ref={setNodeRef}
-        className={`flex-1 space-y-2 overflow-y-auto p-3 transition ${isOver ? 'bg-indigo-50' : ''}`}
+        className={`flex-1 space-y-2 overflow-y-auto p-3 transition ${isOver ? 'bg-primary-tint' : ''}`}
         style={{ minHeight: '200px' }}
       >
         <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
@@ -103,7 +103,7 @@ export function DayColumn({
         {blocks.length === 0 && !isOver && (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-6 text-center">
             <span className="text-2xl" aria-hidden="true">🗓️</span>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground">
               Nothing planned yet.
               {canEdit ? ' Tap + to add an activity.' : ''}
             </p>

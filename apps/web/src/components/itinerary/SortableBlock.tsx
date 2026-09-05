@@ -30,16 +30,20 @@ export interface MemberInfo {
   avatarUrl: string | null;
 }
 
+// Category accents remapped onto the Wayfarer palette (see globals.css @theme):
+// food -> gold, travel -> terracotta brown, stay -> charcoal, activity -> primary red.
 const categoryColors: Record<ActivityCategory, { bg: string; text: string; border: string }> = {
-  food: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-300' },
-  travel: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-300' },
-  stay: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-300' },
-  activity: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-300' },
+  food: { bg: 'bg-cat-food-tint', text: 'text-cat-food', border: 'border-cat-food' },
+  travel: { bg: 'bg-cat-travel-tint', text: 'text-cat-travel', border: 'border-cat-travel' },
+  stay: { bg: 'bg-cat-stay-tint', text: 'text-cat-stay', border: 'border-cat-stay' },
+  activity: { bg: 'bg-cat-activity-tint', text: 'text-cat-activity', border: 'border-cat-activity' },
 };
 
+// Decorative avatar palette drawn from the semantic tokens for a cohesive warm
+// look; still hashed per-user so members stay visually distinguishable.
 const avatarColors = [
-  'bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500',
-  'bg-cyan-500', 'bg-violet-500', 'bg-fuchsia-500', 'bg-teal-500',
+  'bg-primary', 'bg-secondary', 'bg-cat-travel', 'bg-cat-stay',
+  'bg-success', 'bg-warning', 'bg-primary-hover', 'bg-secondary-hover',
 ];
 function avatarColor(id: string): string {
   let hash = 0;
@@ -128,10 +132,10 @@ export function SortableBlock({
       // Stable DOM id so other views (e.g. the map's "Go to Itinerary" link)
       // can deep-link straight to this card.
       id={`block-${block.id}`}
-      className={`scroll-mt-24 rounded-lg border-l-4 ${colors.border} bg-white p-3 shadow-sm transition ${
+      className={`scroll-mt-24 rounded-2xl border-l-4 ${colors.border} bg-card p-3 shadow-sm transition ${
         isDragging ? 'opacity-50 shadow-lg' : 'hover:shadow-md'
-      } ${dimmed ? 'opacity-40' : ''} ${selected ? 'ring-2 ring-indigo-400' : ''} ${
-        lockedByName ? 'ring-1 ring-amber-300' : ''
+      } ${dimmed ? 'opacity-40' : ''} ${selected ? 'ring-2 ring-primary' : ''} ${
+        lockedByName ? 'ring-1 ring-warning' : ''
       }`}
     >
       <div className="flex items-start gap-2">
@@ -142,14 +146,14 @@ export function SortableBlock({
             checked={selected}
             onChange={() => onToggleSelect(block.id)}
             onClick={(e) => e.stopPropagation()}
-            className="mt-1 h-4 w-4 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            className="mt-1 h-4 w-4 flex-shrink-0 rounded border-border text-primary focus:ring-primary"
             aria-label={`Select ${block.title}`}
           />
         )}
 
         {/* Drag handle */}
         <button
-          className="mt-0.5 flex-shrink-0 cursor-grab touch-none text-gray-400 hover:text-gray-600 active:cursor-grabbing"
+          className="mt-0.5 flex-shrink-0 cursor-grab touch-none text-muted-foreground hover:text-muted-foreground active:cursor-grabbing"
           {...attributes}
           {...listeners}
           aria-label="Drag to reorder"
@@ -161,10 +165,10 @@ export function SortableBlock({
 
         {/* Body (clickable to expand) */}
         <div className="min-w-0 flex-1 cursor-pointer" onClick={handleCardClick}>
-          <p className="text-sm font-medium text-gray-900 truncate">{block.title}</p>
+          <p className="text-sm font-medium text-foreground truncate">{block.title}</p>
 
           {(block.startTime || block.endTime) && (
-            <p className="mt-0.5 text-xs text-gray-500">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               {block.startTime && formatTime(block.startTime, tzAbbrev)}
               {block.startTime && block.endTime && ' — '}
               {block.endTime && formatTime(block.endTime, tzAbbrev)}
@@ -172,7 +176,7 @@ export function SortableBlock({
           )}
 
           {block.locationName && (
-            <p className="mt-0.5 text-xs text-gray-500 truncate">📍 {block.locationName}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground truncate">📍 {block.locationName}</p>
           )}
 
           {/* Footer: category + cost */}
@@ -181,7 +185,7 @@ export function SortableBlock({
               {block.category}
             </span>
             {block.estimatedCost != null && block.estimatedCost > 0 && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-muted-foreground">
                 {block.currency} {block.estimatedCost.toLocaleString()}
               </span>
             )}
@@ -190,7 +194,7 @@ export function SortableBlock({
           {/* "Who added this" attribution */}
           {creator && (
             <div
-              className="mt-2 flex items-center gap-1 text-[11px] text-gray-400"
+              className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground"
               title={`Added by ${creator.name}${block.createdAt ? ` on ${formatAbsoluteDate(block.createdAt)}` : ''}`}
             >
               <MiniAvatar userId={block.createdBy} name={creator.name} avatarUrl={creator.avatarUrl} />
@@ -200,7 +204,7 @@ export function SortableBlock({
 
           {/* Last edited timestamp (within 24h) */}
           {recentlyEdited && (
-            <p className="mt-0.5 text-[11px] text-gray-400">
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
               edited {formatRelativeTime(block.updatedAt)}
               {editor ? ` by ${editor.name}` : ''}
             </p>
@@ -208,19 +212,19 @@ export function SortableBlock({
 
           {/* Expanded detail */}
           {expanded && (
-            <div className="mt-3 space-y-2 border-t border-gray-100 pt-3" onClick={(e) => e.stopPropagation()}>
+            <div className="mt-3 space-y-2 border-t border-border pt-3" onClick={(e) => e.stopPropagation()}>
               {block.description ? (
                 <div>
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Notes</p>
-                  <p className="mt-0.5 whitespace-pre-wrap text-xs text-gray-600">{block.description}</p>
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Notes</p>
+                  <p className="mt-0.5 whitespace-pre-wrap text-xs text-muted-foreground">{block.description}</p>
                 </div>
               ) : (
-                <p className="text-xs italic text-gray-400">No description or notes yet.</p>
+                <p className="text-xs italic text-muted-foreground">No description or notes yet.</p>
               )}
 
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Estimated cost</p>
-                <p className="mt-0.5 text-xs text-gray-600">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Estimated cost</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {block.estimatedCost != null && block.estimatedCost > 0
                     ? `${block.currency} ${block.estimatedCost.toLocaleString()}`
                     : 'Not set'}
@@ -229,8 +233,8 @@ export function SortableBlock({
 
               {block.latitude != null && block.longitude != null && (
                 <div>
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Coordinates</p>
-                  <p className="mt-0.5 text-xs text-gray-600">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Coordinates</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {block.latitude.toFixed(4)}, {block.longitude.toFixed(4)}
                   </p>
                 </div>
@@ -249,7 +253,7 @@ export function SortableBlock({
               }}
               disabled={actionsDisabled}
               title={actionsDisabled ? `${lockedByName} is editing this` : 'Edit'}
-              className="rounded p-1 text-gray-300 transition hover:bg-indigo-50 hover:text-indigo-500 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+              className="rounded p-1 text-muted-foreground transition hover:bg-primary-tint hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
               aria-label={`Edit ${block.title}`}
             >
               <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,7 +266,7 @@ export function SortableBlock({
                 onDuplicate(block);
               }}
               title="Copy to day…"
-              className="rounded p-1 text-gray-300 transition hover:bg-gray-100 hover:text-gray-600"
+              className="rounded p-1 text-muted-foreground transition hover:bg-muted hover:text-muted-foreground"
               aria-label={`Duplicate ${block.title}`}
             >
               <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,7 +280,7 @@ export function SortableBlock({
               }}
               disabled={actionsDisabled}
               title={actionsDisabled ? `${lockedByName} is editing this` : 'Delete'}
-              className="rounded p-1 text-gray-300 transition hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+              className="rounded p-1 text-muted-foreground transition hover:bg-danger-tint hover:text-danger disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
               aria-label={`Delete ${block.title}`}
             >
               <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,8 +293,8 @@ export function SortableBlock({
 
       {/* Editing lock banner */}
       {lockedByName && (
-        <p className="mt-2 flex items-center gap-1 text-[11px] text-amber-600">
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+        <p className="mt-2 flex items-center gap-1 text-[11px] text-warning">
+          <span className="h-1.5 w-1.5 rounded-full bg-warning" />
           {lockedByName} is editing…
         </p>
       )}

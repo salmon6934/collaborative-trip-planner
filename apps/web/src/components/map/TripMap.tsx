@@ -153,7 +153,7 @@ export function TripMap() {
     const byDay = groupPinsByDay(allPins);
     return [...byDay.entries()].map(([dayNumber, dayPins]) => ({
       dayNumber,
-      color: dayColors.get(dayNumber) ?? '#4363d8',
+      color: dayColors.get(dayNumber) ?? '#c13a28', // fallback = --color-primary
       pinCount: dayPins.length,
     }));
   }, [allPins, dayColors]);
@@ -228,13 +228,13 @@ export function TripMap() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-tint border-t-primary" />
       </div>
     );
   }
 
   if (error) {
-    return <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600">{error}</div>;
+    return <div className="rounded-lg bg-danger-tint p-4 text-sm text-danger">{error}</div>;
   }
 
   return (
@@ -249,24 +249,24 @@ export function TripMap() {
         />
 
         {selectedPin && (
-          <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-4 text-sm">
+          <div className="rounded-2xl border border-primary bg-primary-tint/60 p-4 text-sm">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="text-sm font-semibold text-gray-900">{selectedPin.title}</h3>
+              <h3 className="text-sm font-semibold text-foreground">{selectedPin.title}</h3>
               <button
                 type="button"
                 onClick={() => setSelectedBlockId(null)}
-                className="text-xs font-medium text-gray-500 hover:text-gray-700"
+                className="text-xs font-medium text-muted-foreground hover:text-foreground"
               >
                 Clear
               </button>
             </div>
-            <p className="mt-1 text-xs text-gray-600">
+            <p className="mt-1 text-xs text-muted-foreground">
               Day {selectedPin.dayNumber}
               {selectedPin.startTime ? ` · ${formatTime(selectedPin.startTime, tzAbbrev)}` : ''} ·{' '}
               <span className="capitalize">{selectedPin.category}</span>
             </p>
             {selectedLeg && (
-              <p className="mt-1 text-xs text-gray-600">
+              <p className="mt-1 text-xs text-muted-foreground">
                 ~{formatDistance(selectedLeg.distance)}
                 {selectedLeg.duration ? ` · ${formatDuration(selectedLeg.duration)}` : ''} to{' '}
                 {selectedLeg.to.title}
@@ -275,38 +275,38 @@ export function TripMap() {
           </div>
         )}
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm">
-          <h3 className="mb-2 text-sm font-semibold text-gray-900">Route estimate</h3>
+        <div className="rounded-2xl border border-border bg-card p-4 text-sm">
+          <h3 className="mb-2 text-sm font-semibold text-foreground">Route estimate</h3>
           {dayDistances.size === 0 ? (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Add two or more located activities in a day to see route distances.
             </p>
           ) : (
-            <ul className="space-y-1 text-xs text-gray-600">
+            <ul className="space-y-1 text-xs text-muted-foreground">
               {[...dayDistances.entries()]
                 .sort((a, b) => a[0] - b[0])
                 .map(([dayNumber, meters]) => (
                   <li key={dayNumber} className="flex items-center justify-between">
                     <span>Day {dayNumber}</span>
-                    <span className="font-medium text-gray-900">~{formatDistance(meters)}</span>
+                    <span className="stat-number text-foreground">~{formatDistance(meters)}</span>
                   </li>
                 ))}
             </ul>
           )}
-          <p className="mt-2 text-[11px] text-gray-400">
+          <p className="mt-2 text-[11px] text-muted-foreground">
             Straight-line (haversine) estimates, not driving directions.
           </p>
         </div>
 
         {missingLocationCount > 0 && (
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             {missingLocationCount} {missingLocationCount === 1 ? 'activity has' : 'activities have'}{' '}
             no location yet, so {missingLocationCount === 1 ? 'it is' : 'they are'} not on the map.
           </p>
         )}
       </aside>
 
-      <div className="relative h-[32rem] overflow-hidden rounded-xl border border-gray-200 bg-white lg:h-[36rem]">
+      <div className="relative h-[32rem] overflow-hidden rounded-2xl border border-border bg-card lg:h-[36rem]">
         <MapView
           pins={visiblePins}
           routes={routes}
@@ -319,8 +319,8 @@ export function TripMap() {
         />
 
         {allPins.length === 0 && (
-          <div className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-white/70 p-6 text-center">
-            <p className="max-w-xs text-sm text-gray-600">
+          <div className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-card/70 p-6 text-center">
+            <p className="max-w-xs text-sm text-muted-foreground">
               No activities have coordinates yet. Add a location to an activity and its pin will
               show up here.
             </p>

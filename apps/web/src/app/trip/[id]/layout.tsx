@@ -232,22 +232,30 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
 
   const onlineCount = membersWithStatus.filter((m) => m.isOnline).length;
 
+  // Active section label, surfaced as the Logo subtitle (Wayfarer pattern).
+  const activeTab = tabs.find((tab) =>
+    tab.href === ''
+      ? pathname === basePath || pathname === `${basePath}/itinerary`
+      : pathname.startsWith(`${basePath}${tab.href}`)
+  );
+  const sectionLabel = activeTab?.name ?? 'Trip';
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Navigation Header */}
-      <header className="border-b border-gray-200 bg-white shadow-sm">
+      <header className="border-b border-border bg-card shadow-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
             <Link
               href="/dashboard"
-              className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
               title="Back to dashboard"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </Link>
-            <Logo href="/dashboard" size={32} />
+            <Logo href="/dashboard" size={32} subtitle={sectionLabel} />
           </div>
           <div className="flex items-center gap-3">
             <ActivityFeedButton
@@ -268,7 +276,7 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
 
       {/* Trip Info Bar (with optional cover image hero) */}
       {trip && (
-        <div className="border-b border-gray-200 bg-white">
+        <div className="border-b border-border bg-card">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {trip.coverImageUrl && (
               <div
@@ -280,7 +288,7 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
                   alt=""
                   className="h-full w-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/10" />
+                <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 to-foreground/10" />
                 <div className="absolute bottom-4 left-4 sm:left-6 lg:left-8">
                   <h1 className="text-2xl font-bold text-white drop-shadow">{trip.title}</h1>
                   <p className="text-sm text-white/90 drop-shadow">{trip.destination}</p>
@@ -289,25 +297,25 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
             )}
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-3 text-sm">
               {!trip.coverImageUrl && (
-                <div className="flex items-center gap-2 font-semibold text-gray-900">
+                <div className="flex items-center gap-2 font-semibold text-foreground">
                   <span aria-hidden="true">📍</span>
                   {trip.destination}
                 </div>
               )}
-              <div className="flex items-center gap-1.5 text-gray-600">
-                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 {formatDateRange(trip.startDate, trip.endDate)}
               </div>
-              <div className="flex items-center gap-1.5 text-gray-600">
-                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 {tripMembers.length} {tripMembers.length === 1 ? 'member' : 'members'}
               </div>
-              <div className="flex items-center gap-1.5 text-gray-600">
-                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Est. total {tripCurrency} {totalCost.toLocaleString()}
@@ -318,7 +326,7 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
       )}
 
       {/* Tab Navigation */}
-      <nav className="border-b border-gray-200 bg-white">
+      <nav className="border-b border-border bg-card">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="-mb-px flex space-x-8 overflow-x-auto">
             {tabs.map((tab) => {
@@ -334,8 +342,8 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
                   href={tab.href === '' ? basePath : tabHref}
                   className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition ${
                     isActive
-                      ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
                   }`}
                 >
                   {tab.name}

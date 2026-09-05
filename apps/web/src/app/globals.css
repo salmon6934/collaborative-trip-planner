@@ -1,28 +1,163 @@
 @import "tailwindcss";
 
 /*
- * Design tokens for the shadcn-style primitives in components/ui.
+ * ─── TripSync design tokens ───────────────────────────────────────────────
  *
- * Tailwind v4 is CSS-first (there is no tailwind.config.*), so utilities like
- * bg-card, text-muted-foreground and ring-primary only exist if the matching
- * --color-* token is registered here. Purely additive: the rest of the app uses
- * palette utilities (bg-indigo-600, text-gray-900, ...) and is unaffected.
+ * Tailwind v4 is CSS-first (there is no tailwind.config.*), so every semantic
+ * utility (bg-primary, text-muted-foreground, ring-primary, bg-cat-food, ...)
+ * only exists because the matching --color-* token is registered in this
+ * @theme block. This is the SINGLE SOURCE OF TRUTH for the palette — component
+ * files reference these tokens rather than raw palette utilities.
+ *
+ * Palette was sampled from the "Wayfarer" reference screenshots: a warm
+ * cream/parchment ground, a deep terracotta-maroon primary, a muted mustard-
+ * gold secondary, and softer, low-saturation pastel semantic states.
  */
 @theme {
-  --color-background: #ffffff;
-  --color-foreground: #111827; /* gray-900 */
+  /* ─── Fonts ─────────────────────────────────────────────────────────────
+   * --font-fraunces is injected on <html> by next/font in layout.tsx.
+   * font-display -> editorial serif (wordmark + headings); font-sans -> body. */
+  --font-display: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
 
-  --color-card: #ffffff;
-  --color-card-foreground: #111827;
+  /* ─── Neutrals / surfaces ──────────────────────────────────────────────── */
+  --color-background: #ece7db; /* warm cream page ground */
+  --color-foreground: #2b2620; /* warm near-black text */
 
-  --color-muted: #f3f4f6; /* gray-100 */
-  --color-muted-foreground: #6b7280; /* gray-500 */
+  --color-card: #fbf9f3; /* warm off-white card surface */
+  --color-card-foreground: #2b2620;
 
-  --color-primary: #4f46e5; /* indigo-600 — the app's brand colour */
-  --color-primary-foreground: #ffffff;
+  --color-muted: #e7e1d3; /* neutral panel / pill ground */
+  --color-muted-foreground: #7c7565; /* warm secondary text */
 
-  --color-border: #e5e7eb; /* gray-200 */
-  --color-ring: #6366f1; /* indigo-500 */
+  --color-border: #e3dccc; /* warm hairline border */
+  --color-input: #e3dccc;
+  --color-ring: #c13a28; /* focus ring = primary */
+
+  /* ─── Primary — terracotta maroon ──────────────────────────────────────── */
+  --color-primary: #c13a28;
+  --color-primary-hover: #a32f1f;
+  --color-primary-foreground: #fdf9f2;
+  --color-primary-tint: #f5dcd4; /* pastel pill background */
+  --color-primary-tint-foreground: #a5301e; /* text/icon on the tint */
+
+  /* ─── Secondary — mustard gold ─────────────────────────────────────────── */
+  --color-secondary: #b8912e;
+  --color-secondary-hover: #95741c;
+  --color-secondary-foreground: #fdf9f2;
+  --color-secondary-tint: #f1e4b4;
+  --color-secondary-tint-foreground: #795910;
+
+  /* ─── Semantic states (pastel-tuned) ───────────────────────────────────── */
+  /* success / owed / online */
+  --color-success: #1e9e72;
+  --color-success-foreground: #ffffff;
+  --color-success-tint: #d8ece0;
+  --color-success-tint-foreground: #147954;
+
+  /* warning / editing-lock / pending */
+  --color-warning: #c6892c;
+  --color-warning-foreground: #ffffff;
+  --color-warning-tint: #f4e6c3;
+  --color-warning-tint-foreground: #855b14;
+
+  /* danger */
+  --color-danger: #c0392b;
+  --color-danger-hover: #a32d22;
+  --color-danger-foreground: #ffffff;
+  --color-danger-tint: #f5dad3;
+  --color-danger-tint-foreground: #9e2a1d;
+
+  /* ─── Itinerary / expense category accents ─────────────────────────────── */
+  --color-cat-food: #b8912e; /* gold */
+  --color-cat-food-tint: #f1e4b4;
+  --color-cat-activity: #c13a28; /* terracotta */
+  --color-cat-activity-tint: #f5dcd4;
+  --color-cat-travel: #b0744a; /* muted terracotta brown */
+  --color-cat-travel-tint: #eddbc9;
+  --color-cat-stay: #4c463c; /* warm charcoal */
+  --color-cat-stay-tint: #e4ded2;
+
+  /* ─── Elevation — softer, warm-tinted, more diffuse ────────────────────── */
+  /* Overrides Tailwind's default shadow scale so every shadow-sm/md/lg/xl in
+   * the app becomes softer from one place. Tint is warm (brown), not neutral. */
+  --shadow-sm: 0 1px 2px 0 rgb(64 45 30 / 0.05), 0 2px 8px -2px rgb(64 45 30 / 0.08);
+  --shadow-md: 0 2px 6px -1px rgb(64 45 30 / 0.07), 0 10px 24px -6px rgb(64 45 30 / 0.12);
+  --shadow-lg: 0 6px 16px -4px rgb(64 45 30 / 0.10), 0 18px 40px -10px rgb(64 45 30 / 0.16);
+  --shadow-xl: 0 10px 24px -6px rgb(64 45 30 / 0.12), 0 28px 56px -14px rgb(64 45 30 / 0.20);
+}
+
+/*
+ * Editorial headings: page-section headings pick up the display serif from one
+ * place, while body copy stays on the clean sans stack. Numerals/labels get
+ * dedicated utilities below.
+ */
+@layer base {
+  body {
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+  }
+}
+
+@layer components {
+  /* Small-caps, letter-spaced eyebrow labels (e.g. "TRIP MAP", "SHARED EXPENSES"). */
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.7rem;
+    line-height: 1;
+    font-weight: 600;
+    color: var(--color-muted-foreground);
+  }
+
+  /* Heavier, tabular numerals for stat displays (totals, distances, counts). */
+  .stat-number {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+}
+
+/*
+ * Leaflet popups/tooltips — align the third-party map chrome with the new card
+ * system (warm card surface, 2xl radius, soft diffuse shadow, warm border).
+ */
+.leaflet-popup-content-wrapper,
+.leaflet-tooltip {
+  background-color: var(--color-card) !important;
+  color: var(--color-foreground) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 1rem !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.leaflet-popup-tip {
+  background-color: var(--color-card) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: none !important;
+}
+
+.leaflet-tooltip {
+  border-radius: 9999px !important;
+  padding: 2px 8px !important;
+}
+
+.leaflet-tooltip-left::before,
+.leaflet-tooltip-right::before {
+  border-left-color: var(--color-border) !important;
+  border-right-color: var(--color-border) !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  color: var(--color-muted-foreground) !important;
 }
 
 /* Sonner toast close button — larger and positioned right-center */

@@ -94,15 +94,15 @@ export function ConflictDialog({ conflict, onKeepMine, onKeepTheirs, onMerge, on
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
-        <h3 className="text-lg font-semibold text-gray-900">Editing conflict</h3>
-        <p className="mt-1 text-sm text-gray-600">
+      <div className="w-full max-w-2xl rounded-2xl bg-card p-6 shadow-xl">
+        <h3 className="text-lg font-semibold text-foreground">Editing conflict</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
           This activity was changed{theirsEditorName ? ` by ${theirsEditorName}` : ' by someone else'} while you were
           editing. Choose which version to keep.
         </p>
 
-        <div className="mt-4 overflow-hidden rounded-lg border border-gray-200">
-          <div className="grid grid-cols-[minmax(0,7rem)_1fr_1fr] bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500">
+        <div className="mt-4 overflow-hidden rounded-lg border border-border">
+          <div className="grid grid-cols-[minmax(0,7rem)_1fr_1fr] bg-muted text-xs font-medium uppercase tracking-wide text-muted-foreground">
             <div className="px-3 py-2">Field</div>
             <div className="px-3 py-2">Your version</div>
             <div className="px-3 py-2">Current version{theirsEditorName ? ` (${theirsEditorName})` : ''}</div>
@@ -114,11 +114,11 @@ export function ConflictDialog({ conflict, onKeepMine, onKeepTheirs, onMerge, on
             return (
               <div
                 key={f.key}
-                className={`grid grid-cols-[minmax(0,7rem)_1fr_1fr] border-t border-gray-100 text-sm ${
-                  differs ? 'bg-amber-50/40' : ''
+                className={`grid grid-cols-[minmax(0,7rem)_1fr_1fr] border-t border-border text-sm ${
+                  differs ? 'bg-warning-tint/40' : ''
                 }`}
               >
-                <div className="px-3 py-2 font-medium text-gray-600">{f.label}</div>
+                <div className="px-3 py-2 font-medium text-muted-foreground">{f.label}</div>
                 <label className={`flex items-start gap-2 px-3 py-2 ${mergeMode ? 'cursor-pointer' : ''}`}>
                   {mergeMode && (
                     <input
@@ -126,10 +126,10 @@ export function ConflictDialog({ conflict, onKeepMine, onKeepTheirs, onMerge, on
                       name={`conflict-${f.key}`}
                       checked={choices[f.key]}
                       onChange={() => setChoices((c) => ({ ...c, [f.key]: true }))}
-                      className="mt-0.5 h-3.5 w-3.5 text-indigo-600"
+                      className="mt-0.5 h-3.5 w-3.5 text-primary"
                     />
                   )}
-                  <span className={`break-words ${differs ? 'font-medium text-gray-900' : 'text-gray-600'}`}>{mv}</span>
+                  <span className={`break-words ${differs ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>{mv}</span>
                 </label>
                 <label className={`flex items-start gap-2 px-3 py-2 ${mergeMode ? 'cursor-pointer' : ''}`}>
                   {mergeMode && (
@@ -138,10 +138,10 @@ export function ConflictDialog({ conflict, onKeepMine, onKeepTheirs, onMerge, on
                       name={`conflict-${f.key}`}
                       checked={!choices[f.key]}
                       onChange={() => setChoices((c) => ({ ...c, [f.key]: false }))}
-                      className="mt-0.5 h-3.5 w-3.5 text-indigo-600"
+                      className="mt-0.5 h-3.5 w-3.5 text-primary"
                     />
                   )}
-                  <span className={`break-words ${differs ? 'font-medium text-gray-900' : 'text-gray-600'}`}>{tv}</span>
+                  <span className={`break-words ${differs ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>{tv}</span>
                 </label>
               </div>
             );
@@ -151,14 +151,14 @@ export function ConflictDialog({ conflict, onKeepMine, onKeepTheirs, onMerge, on
         <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
           <button
             onClick={onClose}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
           >
             Cancel
           </button>
           {mergeMode ? (
             <button
               onClick={handleMerge}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-hover"
             >
               Apply Merge
             </button>
@@ -166,19 +166,19 @@ export function ConflictDialog({ conflict, onKeepMine, onKeepTheirs, onMerge, on
             <>
               <button
                 onClick={() => setMergeMode(true)}
-                className="rounded-lg border border-indigo-300 px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
+                className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary-tint"
               >
                 Merge…
               </button>
               <button
                 onClick={onKeepTheirs}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
               >
                 Keep theirs
               </button>
               <button
                 onClick={onKeepMine}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-hover"
               >
                 Keep mine
               </button>

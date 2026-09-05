@@ -87,21 +87,21 @@ export default function JoinTripPage() {
   }, [status, session?.accessToken, code, router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-8 text-center shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-secondary-tint px-4">
+      <div className="w-full max-w-md rounded-2xl bg-card p-8 text-center shadow-lg">
         {state === 'joining' ? (
           <>
-            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
-            <h1 className="mt-6 text-xl font-semibold text-gray-900">Joining trip…</h1>
-            <p className="mt-2 text-sm text-gray-600">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary-tint border-t-primary" />
+            <h1 className="mt-6 text-xl font-semibold text-foreground">Joining trip…</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
               Hang tight while we add you to this trip.
             </p>
           </>
         ) : (
           <>
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-tint">
               <svg
-                className="h-6 w-6 text-red-500"
+                className="h-6 w-6 text-danger"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -115,11 +115,11 @@ export default function JoinTripPage() {
                 />
               </svg>
             </div>
-            <h1 className="mt-4 text-xl font-semibold text-gray-900">Could not join trip</h1>
-            <p className="mt-2 text-sm text-gray-600">{error}</p>
+            <h1 className="mt-4 text-xl font-semibold text-foreground">Could not join trip</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{error}</p>
             <Link
               href="/dashboard"
-              className="mt-6 inline-flex rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+              className="mt-6 inline-flex rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-hover"
             >
               Go to Dashboard
             </Link>

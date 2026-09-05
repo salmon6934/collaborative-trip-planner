@@ -10,6 +10,8 @@ import { generateDays } from './itinerary.service.js';
 interface CreateTripInput {
   title: string;
   destination: string;
+  destinationLat?: number | null;
+  destinationLng?: number | null;
   startDate: Date;
   endDate: Date;
 }
@@ -17,6 +19,8 @@ interface CreateTripInput {
 interface UpdateTripInput {
   title?: string;
   destination?: string;
+  destinationLat?: number | null;
+  destinationLng?: number | null;
   startDate?: Date;
   endDate?: Date;
   coverImageUrl?: string | null;
@@ -36,6 +40,8 @@ export async function createTrip(userId: string, input: CreateTripInput) {
     .values({
       title: input.title,
       destination: input.destination,
+      destinationLat: input.destinationLat ?? null,
+      destinationLng: input.destinationLng ?? null,
       startDate: input.startDate.toISOString().split('T')[0],
       endDate: input.endDate.toISOString().split('T')[0],
       createdBy: userId,
@@ -76,6 +82,8 @@ export async function updateTrip(tripId: string, input: UpdateTripInput) {
   const values: Record<string, unknown> = {};
   if (input.title !== undefined) values.title = input.title;
   if (input.destination !== undefined) values.destination = input.destination;
+  if (input.destinationLat !== undefined) values.destinationLat = input.destinationLat;
+  if (input.destinationLng !== undefined) values.destinationLng = input.destinationLng;
   if (input.startDate !== undefined) values.startDate = input.startDate.toISOString().split('T')[0];
   if (input.endDate !== undefined) values.endDate = input.endDate.toISOString().split('T')[0];
   if (input.coverImageUrl !== undefined) values.coverImageUrl = input.coverImageUrl;
@@ -111,6 +119,8 @@ export async function listUserTrips(userId: string) {
       id: trips.id,
       title: trips.title,
       destination: trips.destination,
+      destinationLat: trips.destinationLat,
+      destinationLng: trips.destinationLng,
       startDate: trips.startDate,
       endDate: trips.endDate,
       createdBy: trips.createdBy,

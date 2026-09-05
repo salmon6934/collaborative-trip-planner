@@ -59,6 +59,7 @@ router.get('/search', async (req: Request, res: Response) => {
 
     // Resolve the destination bias, verifying membership first.
     let destination: string | null = null;
+    let destinationCoords: { lat: number; lng: number } | null = null;
     const tripId = typeof req.query.tripId === 'string' ? req.query.tripId : '';
     if (tripId) {
       const membership = await getMembership(tripId, userId);
@@ -71,13 +72,24 @@ router.get('/search', async (req: Request, res: Response) => {
       }
       const trip = await getTrip(tripId);
       destination = trip?.destination ?? null;
+      // Stored coordinates give a deterministic bias without re-geocoding the
+      // destination string on every search.
+      if (trip?.destinationLat != null && trip?.destinationLng != null) {
+        destinationCoords = { lat: trip.destinationLat, lng: trip.destinationLng };
+      }
     }
 
     // Prefer place names in the caller's language, so an English UI shows
     // "Tokyo Tower" rather than Nominatim's default local-language name.
     const language = normalizeLanguage(req.headers['accept-language']);
 
-    const { results, biased } = await searchPlacesForTrip(rawQuery, destination, limit, language);
+    const { results, biased } = await searchPlacesForTrip(
+      rawQuery,
+      destination,
+      limit,
+      language,
+      destinationCoords
+    );
 
     res.status(200).json({ results, biased, attribution: GEOCODE_ATTRIBUTION });
   } catch (error) {

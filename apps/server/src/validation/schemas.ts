@@ -28,9 +28,16 @@ export const loginSchema = z.object({
 });
 
 // Trip schemas
+// Latitude/longitude of the resolved destination. Optional and nullable so a
+// destination typed by hand (no geocoding pick) still validates.
+const latitudeSchema = z.number().min(-90).max(90).nullable().optional();
+const longitudeSchema = z.number().min(-180).max(180).nullable().optional();
+
 export const createTripSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   destination: z.string().min(1, 'Destination is required').max(200),
+  destinationLat: latitudeSchema,
+  destinationLng: longitudeSchema,
   startDate: dateSchema,
   endDate: dateSchema,
 }).refine((data) => data.endDate >= data.startDate, {
@@ -41,6 +48,8 @@ export const createTripSchema = z.object({
 export const updateTripSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   destination: z.string().min(1).max(200).optional(),
+  destinationLat: latitudeSchema,
+  destinationLng: longitudeSchema,
   startDate: dateSchema.optional(),
   endDate: dateSchema.optional(),
   coverImageUrl: z.string().url().max(2000).nullable().optional(),

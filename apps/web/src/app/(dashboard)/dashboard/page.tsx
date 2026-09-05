@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchTrips, createTripApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { LocationSearchInput, type LocationValue } from '@/components/itinerary/LocationSearchInput';
 
 interface Trip {
   id: string;
@@ -44,21 +45,21 @@ export default function DashboardPage() {
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Trips</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-bold text-foreground">My Trips</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Plan and manage your collaborative trips
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowJoinModal(true)}
-            className="rounded-lg border border-indigo-600 px-4 py-2.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="rounded-lg border border-primary px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary-tint focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >
             Join Trip
           </button>
           <button
             onClick={() => setShowModal(true)}
-            className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >
             + Create Trip
           </button>
@@ -67,17 +68,17 @@ export default function DashboardPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-tint border-t-primary" />
         </div>
       ) : trips.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-          <p className="text-lg font-medium text-gray-900">No trips yet</p>
-          <p className="mt-2 text-sm text-gray-600">
+        <div className="rounded-2xl border-2 border-dashed border-border bg-card p-12 text-center">
+          <p className="text-lg font-medium text-foreground">No trips yet</p>
+          <p className="mt-2 text-sm text-muted-foreground">
             Create your first trip to get started planning.
           </p>
           <button
             onClick={() => setShowModal(true)}
-            className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover"
           >
             Create a Trip
           </button>
@@ -88,10 +89,10 @@ export default function DashboardPage() {
             <Link
               key={trip.id}
               href={`/trip/${trip.id}`}
-              className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:border-indigo-300 hover:shadow-md"
+              className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:border-primary hover:shadow-md"
             >
               {trip.coverImageUrl ? (
-                <div className="h-28 w-full overflow-hidden bg-gray-100">
+                <div className="h-28 w-full overflow-hidden bg-muted">
                   <img
                     src={trip.coverImageUrl}
                     alt=""
@@ -99,21 +100,21 @@ export default function DashboardPage() {
                   />
                 </div>
               ) : (
-                <div className="flex h-28 w-full items-center justify-center bg-gradient-to-br from-indigo-400 to-violet-500 text-3xl">
+                <div className="flex h-28 w-full items-center justify-center bg-gradient-to-br from-primary to-secondary text-3xl">
                   🗺️
                 </div>
               )}
               <div className="p-6">
-                <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600">
+                <h3 className="font-semibold text-foreground group-hover:text-primary">
                   {trip.title}
                 </h3>
-                <p className="mt-1 text-sm text-gray-600">{trip.destination}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{trip.destination}</p>
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted-foreground">
                     {new Date(trip.startDate).toLocaleDateString()} —{' '}
                     {new Date(trip.endDate).toLocaleDateString()}
                   </span>
-                  <span className="inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                  <span className="inline-flex rounded-full bg-primary-tint px-2 py-0.5 text-xs font-medium text-primary-tint-foreground">
                     {trip.role}
                   </span>
                 </div>
@@ -160,7 +161,11 @@ function CreateTripModal({
   onCreated: () => void;
 }) {
   const [title, setTitle] = useState('');
-  const [destination, setDestination] = useState('');
+  const [destination, setDestination] = useState<LocationValue>({
+    locationName: '',
+    latitude: null,
+    longitude: null,
+  });
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [error, setError] = useState('');
@@ -169,10 +174,26 @@ function CreateTripModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+
+    if (!destination.locationName.trim()) {
+      setError('Destination is required');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await createTripApi(token, { title, destination, startDate, endDate });
+      await createTripApi(token, {
+        title,
+        destination: destination.locationName.trim(),
+        // Coordinates are set only when the user picks a geocoding suggestion.
+        // A hand-typed destination sends nulls, and search bias falls back to
+        // resolving the string server-side.
+        destinationLat: destination.latitude,
+        destinationLng: destination.longitude,
+        startDate,
+        endDate,
+      });
       onCreated();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create trip');
@@ -183,16 +204,16 @@ function CreateTripModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h2 className="mb-4 text-xl font-semibold text-gray-900">Create a Trip</h2>
+      <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-xl">
+        <h2 className="mb-4 text-xl font-semibold text-foreground">Create a Trip</h2>
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+          <div className="mb-4 rounded-lg bg-danger-tint p-3 text-sm text-danger">{error}</div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="title" className="block text-sm font-medium text-foreground">
               Trip Name
             </label>
             <input
@@ -201,29 +222,23 @@ function CreateTripModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="Summer Vacation"
             />
           </div>
 
-          <div>
-            <label htmlFor="destination" className="block text-sm font-medium text-gray-700">
-              Destination
-            </label>
-            <input
-              id="destination"
-              type="text"
-              value={destination}
-              onChange={(e) => setDestination(e.target.value)}
-              required
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="Paris, France"
-            />
-          </div>
+          <LocationSearchInput
+            label="Destination"
+            token={token}
+            value={destination}
+            onChange={setDestination}
+            id="destination"
+            placeholder="Search a city, e.g. Paris, France"
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="startDate" className="block text-sm font-medium text-foreground">
                 Start Date
               </label>
               <input
@@ -232,11 +247,11 @@ function CreateTripModal({
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <div>
-              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="endDate" className="block text-sm font-medium text-foreground">
                 End Date
               </label>
               <input
@@ -245,7 +260,7 @@ function CreateTripModal({
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
@@ -254,14 +269,14 @@ function CreateTripModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+              className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-hover disabled:opacity-50"
             >
               {loading ? 'Creating...' : 'Create Trip'}
             </button>
@@ -326,19 +341,19 @@ function JoinTripModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h2 className="mb-4 text-xl font-semibold text-gray-900">Join a Trip</h2>
-        <p className="mb-4 text-sm text-gray-600">
+      <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-xl">
+        <h2 className="mb-4 text-xl font-semibold text-foreground">Join a Trip</h2>
+        <p className="mb-4 text-sm text-muted-foreground">
           Enter the invite code shared by the trip owner to join their trip.
         </p>
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+          <div className="mb-4 rounded-lg bg-danger-tint p-3 text-sm text-danger">{error}</div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="inviteCode" className="block text-sm font-medium text-foreground">
               Invite Code
             </label>
             <input
@@ -347,7 +362,7 @@ function JoinTripModal({
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value)}
               required
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 font-mono shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 font-mono shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="abc123xyz0"
             />
           </div>
@@ -356,14 +371,14 @@ function JoinTripModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !inviteCode.trim()}
-              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+              className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-hover disabled:opacity-50"
             >
               {loading ? 'Joining...' : 'Join Trip'}
             </button>

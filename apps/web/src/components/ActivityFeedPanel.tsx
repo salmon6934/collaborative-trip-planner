@@ -4,15 +4,16 @@ import { ActivityEntry } from '@/hooks/useActivityFeed';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+// Warm avatar palette drawn from the semantic tokens (globals.css @theme).
 const avatarColors = [
-  'bg-indigo-500',
-  'bg-emerald-500',
-  'bg-amber-500',
-  'bg-rose-500',
-  'bg-cyan-500',
-  'bg-violet-500',
-  'bg-fuchsia-500',
-  'bg-teal-500',
+  'bg-primary',
+  'bg-secondary',
+  'bg-cat-travel',
+  'bg-cat-stay',
+  'bg-success',
+  'bg-warning',
+  'bg-primary-hover',
+  'bg-secondary-hover',
 ];
 
 function getAvatarColor(userId: string): string {
@@ -77,16 +78,16 @@ export function ActivityFeedPanel({
 
       {/* Slide-in panel */}
       <div
-        className={`fixed right-0 top-0 z-50 h-full w-80 transform bg-white shadow-xl transition-transform duration-300 ease-in-out ${
+        className={`fixed right-0 top-0 z-50 h-full w-80 transform bg-card shadow-xl transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Panel header */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">Activity</h2>
+        <div className="flex items-center justify-between border-b border-border px-4 py-4">
+          <h2 className="text-lg font-semibold text-foreground">Activity</h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
             aria-label="Close activity feed"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,7 +99,7 @@ export function ActivityFeedPanel({
         {/* Activity list */}
         <div className="overflow-y-auto p-4" style={{ height: 'calc(100% - 65px)' }}>
           {activities.length === 0 && !loading ? (
-            <p className="text-center text-sm text-gray-400">No activity yet</p>
+            <p className="text-center text-sm text-muted-foreground">No activity yet</p>
           ) : (
             <div className="space-y-4">
               {activities.map((entry) => (
@@ -112,8 +113,8 @@ export function ActivityFeedPanel({
 
                   {/* Description + timestamp */}
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-gray-800">{entry.description}</p>
-                    <p className="mt-0.5 text-xs text-gray-400">
+                    <p className="text-sm text-foreground">{entry.description}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
                       {relativeTime(entry.createdAt)}
                     </p>
                   </div>
@@ -128,7 +129,7 @@ export function ActivityFeedPanel({
               <button
                 onClick={onLoadMore}
                 disabled={loading}
-                className="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition"
+                className="rounded-md border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-50 transition"
               >
                 {loading ? 'Loading...' : 'Load more'}
               </button>
@@ -137,7 +138,7 @@ export function ActivityFeedPanel({
 
           {/* Initial loading state */}
           {loading && activities.length === 0 && (
-            <div className="text-center text-sm text-gray-500">Loading...</div>
+            <div className="text-center text-sm text-muted-foreground">Loading...</div>
           )}
         </div>
       </div>

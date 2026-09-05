@@ -226,8 +226,8 @@ export function ExpenseForm({
   function splitButtonClass(active: boolean): string {
     return `flex-1 rounded-md px-3 py-2 text-sm font-medium transition ${
       active
-        ? 'bg-indigo-600 text-white'
-        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        ? 'bg-primary text-white'
+        : 'bg-muted text-foreground hover:bg-muted'
     }`;
   }
 
@@ -237,20 +237,20 @@ export function ExpenseForm({
       role="dialog"
       aria-modal="true"
     >
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-card p-6 shadow-xl">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
           {isEdit ? 'Edit Expense' : 'Add Expense'}
         </h2>
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+          <div className="mb-4 rounded-lg bg-danger-tint p-3 text-sm text-danger">{error}</div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title */}
           <div>
-            <label htmlFor="expense-title" className="block text-sm font-medium text-gray-700">
-              Title <span className="text-red-500">*</span>
+            <label htmlFor="expense-title" className="block text-sm font-medium text-foreground">
+              Title <span className="text-danger">*</span>
             </label>
             <input
               id="expense-title"
@@ -259,15 +259,15 @@ export function ExpenseForm({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Dinner at the beach shack"
               maxLength={200}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
           {/* Amount + currency */}
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
-              <label htmlFor="expense-amount" className="block text-sm font-medium text-gray-700">
-                Amount <span className="text-red-500">*</span>
+              <label htmlFor="expense-amount" className="block text-sm font-medium text-foreground">
+                Amount <span className="text-danger">*</span>
               </label>
               <input
                 id="expense-amount"
@@ -277,18 +277,18 @@ export function ExpenseForm({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <div>
-              <label htmlFor="expense-currency" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="expense-currency" className="block text-sm font-medium text-foreground">
                 Currency
               </label>
               <select
                 id="expense-currency"
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 {CURRENCIES.map((c) => (
                   <option key={c} value={c}>
@@ -301,14 +301,14 @@ export function ExpenseForm({
 
           {/* Linked block */}
           <div>
-            <label htmlFor="expense-block" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="expense-block" className="block text-sm font-medium text-foreground">
               Link to activity (optional)
             </label>
             <select
               id="expense-block"
               value={linkedBlockId}
               onChange={(e) => setLinkedBlockId(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="">— None —</option>
               {blocks.map((b) => (
@@ -322,13 +322,13 @@ export function ExpenseForm({
           {/* Payer selection */}
           <div>
             <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-gray-700">Paid by</label>
-              <label className="flex items-center gap-1.5 text-xs text-gray-600">
+              <label className="block text-sm font-medium text-foreground">Paid by</label>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <input
                   type="checkbox"
                   checked={multiPayer}
                   onChange={(e) => setMultiPayer(e.target.checked)}
-                  className="h-3.5 w-3.5 rounded text-indigo-600 focus:ring-indigo-500"
+                  className="h-3.5 w-3.5 rounded text-primary focus:ring-primary"
                 />
                 Multiple payers
               </label>
@@ -338,7 +338,7 @@ export function ExpenseForm({
               <select
                 value={singlePayerId}
                 onChange={(e) => setSinglePayerId(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 {members.map((m) => (
                   <option key={m.userId} value={m.userId}>
@@ -351,7 +351,7 @@ export function ExpenseForm({
               <div className="mt-2 space-y-2">
                 {members.map((m) => (
                   <div key={m.userId} className="flex items-center gap-2">
-                    <span className="flex-1 truncate text-sm text-gray-700">
+                    <span className="flex-1 truncate text-sm text-foreground">
                       {m.name}
                       {m.userId === currentUserId ? ' (you)' : ''}
                     </span>
@@ -362,13 +362,13 @@ export function ExpenseForm({
                       value={payerAmounts[m.userId] ?? ''}
                       onChange={(e) => updateMap(setPayerAmounts, m.userId, e.target.value)}
                       placeholder="0"
-                      className="w-28 rounded-md border border-gray-300 px-2 py-1.5 text-right text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="w-28 rounded-md border border-border px-2 py-1.5 text-right text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
                 ))}
                 <p
                   className={`text-xs ${
-                    payersBalanced ? 'text-green-600' : 'text-amber-600'
+                    payersBalanced ? 'text-success' : 'text-warning'
                   }`}
                 >
                   Paid so far: {formatMoney(payerSumMinor, currency)}
@@ -383,7 +383,7 @@ export function ExpenseForm({
 
           {/* Split type toggle */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Split</label>
+            <label className="block text-sm font-medium text-foreground">Split</label>
             <div className="mt-1 flex gap-2">
               <button
                 type="button"
@@ -411,7 +411,7 @@ export function ExpenseForm({
 
           {/* Split details */}
           {splitType === 'equal' && (
-            <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700">
+            <div className="rounded-lg bg-muted p-3 text-sm text-foreground">
               Split equally among <span className="font-medium">{members.length}</span>{' '}
               {members.length === 1 ? 'member' : 'members'}
               {amountMinor != null && members.length > 0 && (
@@ -430,7 +430,7 @@ export function ExpenseForm({
             <div className="space-y-2">
               {members.map((m) => (
                 <div key={m.userId} className="flex items-center gap-2">
-                  <span className="flex-1 truncate text-sm text-gray-700">
+                  <span className="flex-1 truncate text-sm text-foreground">
                     {m.name}
                     {m.userId === currentUserId ? ' (you)' : ''}
                   </span>
@@ -441,11 +441,11 @@ export function ExpenseForm({
                     value={customAmounts[m.userId] ?? ''}
                     onChange={(e) => updateMap(setCustomAmounts, m.userId, e.target.value)}
                     placeholder="0"
-                    className="w-28 rounded-md border border-gray-300 px-2 py-1.5 text-right text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-28 rounded-md border border-border px-2 py-1.5 text-right text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
               ))}
-              <p className={`text-xs ${customBalanced ? 'text-green-600' : 'text-amber-600'}`}>
+              <p className={`text-xs ${customBalanced ? 'text-success' : 'text-warning'}`}>
                 Assigned: {formatMoney(customSumMinor, currency)}
                 {amountMinor != null && ` of ${formatMoney(amountMinor, currency)}`}
                 {amountMinor != null &&
@@ -459,7 +459,7 @@ export function ExpenseForm({
             <div className="space-y-2">
               {members.map((m) => (
                 <div key={m.userId} className="flex items-center gap-2">
-                  <span className="flex-1 truncate text-sm text-gray-700">
+                  <span className="flex-1 truncate text-sm text-foreground">
                     {m.name}
                     {m.userId === currentUserId ? ' (you)' : ''}
                   </span>
@@ -472,15 +472,15 @@ export function ExpenseForm({
                       value={percentages[m.userId] ?? ''}
                       onChange={(e) => updateMap(setPercentages, m.userId, e.target.value)}
                       placeholder="0"
-                      className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-right text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="w-20 rounded-md border border-border px-2 py-1.5 text-right text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
-                    <span className="text-sm text-gray-500">%</span>
+                    <span className="text-sm text-muted-foreground">%</span>
                   </div>
                 </div>
               ))}
               <p
                 className={`text-xs ${
-                  percentageBalanced ? 'text-green-600' : 'text-amber-600'
+                  percentageBalanced ? 'text-success' : 'text-warning'
                 }`}
               >
                 Total: {percentageSum.toFixed(2)}% of 100%
@@ -493,14 +493,14 @@ export function ExpenseForm({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Expense'}
             </button>

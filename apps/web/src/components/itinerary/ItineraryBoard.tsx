@@ -518,19 +518,19 @@ export function ItineraryBoard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-tint border-t-primary" />
       </div>
     );
   }
 
   if (error) {
-    return <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600">{error}</div>;
+    return <div className="rounded-lg bg-danger-tint p-4 text-sm text-danger">{error}</div>;
   }
 
   if (days.length === 0) {
     return (
-      <div className="rounded-xl border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-        <p className="text-gray-500">
+      <div className="rounded-2xl border-2 border-dashed border-border bg-card p-12 text-center">
+        <p className="text-muted-foreground">
           No days found for this trip. Days are created automatically when you set your trip dates.
         </p>
       </div>
@@ -544,27 +544,27 @@ export function ItineraryBoard() {
     <>
       {/* Connection status */}
       {status === 'reconnecting' && (
-        <div className="mb-3 flex items-center gap-2 rounded-lg bg-yellow-50 px-3 py-2 text-sm text-yellow-700">
-          <div className="h-2 w-2 animate-pulse rounded-full bg-yellow-500" />
+        <div className="mb-3 flex items-center gap-2 rounded-lg bg-warning-tint px-3 py-2 text-sm text-warning-tint-foreground">
+          <div className="h-2 w-2 animate-pulse rounded-full bg-warning" />
           Reconnecting...
         </div>
       )}
       {status === 'disconnected' && (
-        <div className="mb-3 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-          <div className="h-2 w-2 rounded-full bg-red-500" />
+        <div className="mb-3 flex items-center gap-2 rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+          <div className="h-2 w-2 rounded-full bg-danger" />
           Disconnected — changes may not sync
         </div>
       )}
 
       {/* Trip summary / overview card */}
-      <div className="mb-4 rounded-xl border border-gray-200 bg-white">
+      <div className="mb-4 rounded-2xl border border-border bg-card">
         <button
           onClick={() => setSummaryOpen((v) => !v)}
           className="flex w-full items-center justify-between px-4 py-3 text-left"
           aria-expanded={summaryOpen}
         >
-          <span className="text-sm font-semibold text-gray-900">Trip Overview</span>
-          <span className="flex items-center gap-3 text-xs text-gray-500">
+          <span className="text-sm font-semibold text-foreground">Trip Overview</span>
+          <span className="flex items-center gap-3 text-xs text-muted-foreground">
             <span>{stats.totalBlocks} activities</span>
             <span>{stats.currency} {stats.totalCost.toLocaleString()}</span>
             <svg
@@ -578,7 +578,7 @@ export function ItineraryBoard() {
           </span>
         </button>
         {summaryOpen && (
-          <div className="border-t border-gray-100 px-4 py-4">
+          <div className="border-t border-border px-4 py-4">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <Stat label="Total activities" value={String(stats.totalBlocks)} />
               <Stat label="Estimated cost" value={`${stats.currency} ${stats.totalCost.toLocaleString()}`} />
@@ -587,16 +587,16 @@ export function ItineraryBoard() {
             </div>
             {/* Density bars */}
             <div className="mt-4">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">Activities per day</p>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Activities per day</p>
               <div className="flex items-end gap-1">
                 {stats.perDay.map((p) => (
                   <div key={p.dayNumber} className="flex flex-1 flex-col items-center gap-1">
                     <div
-                      className="w-full rounded-t bg-indigo-400"
+                      className="w-full rounded-t bg-primary"
                       style={{ height: `${8 + (p.count / stats.maxCount) * 40}px` }}
                       title={`Day ${p.dayNumber}: ${p.count} ${p.count === 1 ? 'activity' : 'activities'}`}
                     />
-                    <span className="text-[10px] text-gray-400">{p.dayNumber}</span>
+                    <span className="text-[10px] text-muted-foreground">{p.dayNumber}</span>
                   </div>
                 ))}
               </div>
@@ -608,7 +608,7 @@ export function ItineraryBoard() {
       {/* Toolbar: search, filters, jump-to-day, select mode */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="relative">
-          <svg className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
@@ -616,7 +616,7 @@ export function ItineraryBoard() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search activities…"
-            className="w-56 rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-56 rounded-lg border border-border py-2 pl-9 pr-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
 
@@ -630,8 +630,8 @@ export function ItineraryBoard() {
                 onClick={() => toggleCategory(c.key)}
                 className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                   active
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                    : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                    ? 'border-primary bg-primary-tint text-primary-tint-foreground'
+                    : 'border-border bg-card text-muted-foreground hover:bg-muted'
                 }`}
                 aria-pressed={active}
               >
@@ -642,7 +642,7 @@ export function ItineraryBoard() {
           {activeCategories.size > 0 && (
             <button
               onClick={() => setActiveCategories(new Set())}
-              className="ml-1 text-xs text-gray-400 hover:text-gray-600"
+              className="ml-1 text-xs text-muted-foreground hover:text-muted-foreground"
             >
               Clear
             </button>
@@ -655,7 +655,7 @@ export function ItineraryBoard() {
             jumpToDay(e.target.value);
             e.target.selectedIndex = 0;
           }}
-          className="rounded-lg border border-gray-300 py-2 pl-3 pr-8 text-sm text-gray-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="rounded-lg border border-border py-2 pl-3 pr-8 text-sm text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           defaultValue=""
           aria-label="Jump to day"
         >
@@ -675,8 +675,8 @@ export function ItineraryBoard() {
             onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
             className={`ml-auto rounded-lg border px-3 py-2 text-sm font-medium transition ${
               selectMode
-                ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                ? 'border-primary bg-primary-tint text-primary-tint-foreground'
+                : 'border-border bg-card text-muted-foreground hover:bg-muted'
             }`}
           >
             {selectMode ? 'Done' : 'Select'}
@@ -686,18 +686,18 @@ export function ItineraryBoard() {
 
       {/* Empty onboarding state */}
       {showEmptyOnboarding && (
-        <div className="mb-4 rounded-xl border-2 border-dashed border-gray-300 bg-white p-10 text-center">
-          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-50 text-3xl">
+        <div className="mb-4 rounded-2xl border-2 border-dashed border-border bg-card p-10 text-center">
+          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary-tint text-3xl">
             🧭
           </div>
-          <p className="text-lg font-medium text-gray-900">Start by adding your first activity!</p>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="text-lg font-medium text-foreground">Start by adding your first activity!</p>
+          <p className="mt-1 text-sm text-muted-foreground">
             Plan meals, stays, travel and things to do — then drag them around to build your days.
           </p>
           {canEdit && (
             <button
               onClick={() => setAddModalDayId(days[0].id)}
-              className="mt-4 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+              className="mt-4 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-hover"
             >
               + Add Activity
             </button>
@@ -802,15 +802,15 @@ export function ItineraryBoard() {
 
       {/* Bulk action floating bar */}
       {selectMode && selectedIds.size > 0 && (
-        <div className="fixed inset-x-0 bottom-6 z-40 mx-auto flex w-fit items-center gap-4 rounded-full bg-gray-900 px-5 py-3 text-sm text-white shadow-lg">
+        <div className="fixed inset-x-0 bottom-6 z-40 mx-auto flex w-fit items-center gap-4 rounded-full bg-muted px-5 py-3 text-sm text-white shadow-lg">
           <span>{selectedIds.size} selected</span>
-          <button onClick={() => setBulkMoveOpen(true)} className="font-medium text-indigo-300 hover:text-indigo-200">
+          <button onClick={() => setBulkMoveOpen(true)} className="font-medium text-primary hover:text-primary-tint">
             Move to Day…
           </button>
-          <button onClick={handleBulkDelete} className="font-medium text-red-300 hover:text-red-200">
+          <button onClick={handleBulkDelete} className="font-medium text-danger hover:text-danger-hover">
             Delete
           </button>
-          <button onClick={exitSelectMode} className="text-gray-400 hover:text-gray-200">
+          <button onClick={exitSelectMode} className="text-muted-foreground hover:text-muted-foreground">
             Clear
           </button>
         </div>
@@ -822,8 +822,8 @@ export function ItineraryBoard() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>
-      <p className="mt-0.5 text-lg font-semibold text-gray-900">{value}</p>
+      <p className="eyebrow">{label}</p>
+      <p className="stat-number mt-0.5 text-lg text-foreground">{value}</p>
     </div>
   );
 }

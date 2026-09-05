@@ -37,7 +37,7 @@ export function createDayIcon(color: string, options: DayMarkerOptions = {}): L.
   const cached = iconCache.get(cacheKey);
   if (cached) return cached;
 
-  const stroke = selected ? '#111827' : '#ffffff';
+  const stroke = selected ? '#2b2620' : '#ffffff'; // selected = --color-foreground
   const strokeWidth = selected ? 2.5 : 1.5;
 
   // Teardrop outline: circular head with a point at the bottom center.

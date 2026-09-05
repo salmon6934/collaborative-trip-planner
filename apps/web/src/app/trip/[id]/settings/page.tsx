@@ -26,9 +26,10 @@ interface TripDetails {
   timezone: string | null;
 }
 
+// Warm avatar palette drawn from the semantic tokens (globals.css @theme).
 const avatarColors = [
-  'bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500',
-  'bg-cyan-500', 'bg-violet-500', 'bg-fuchsia-500', 'bg-teal-500',
+  'bg-primary', 'bg-secondary', 'bg-cat-travel', 'bg-cat-stay',
+  'bg-success', 'bg-warning', 'bg-primary-hover', 'bg-secondary-hover',
 ];
 function avatarColor(id: string): string {
   let hash = 0;
@@ -57,14 +58,14 @@ function ConfirmDialog({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        <p className="mt-2 text-sm text-gray-600">{message}</p>
+      <div className="w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl">
+        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+        <p className="mt-2 text-sm text-muted-foreground">{message}</p>
         <div className="mt-5 flex gap-3">
           <button
             onClick={onCancel}
             disabled={busy}
-            className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
           >
             Cancel
           </button>
@@ -72,7 +73,7 @@ function ConfirmDialog({
             onClick={onConfirm}
             disabled={busy}
             className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-sm disabled:opacity-50 ${
-              danger ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'
+              danger ? 'bg-danger hover:bg-danger-hover' : 'bg-primary hover:bg-primary-hover'
             }`}
           >
             {busy ? 'Working…' : confirmLabel}
@@ -290,34 +291,34 @@ export default function TripSettingsPage() {
   }
 
   const roleBadgeClass: Record<string, string> = {
-    owner: 'bg-indigo-100 text-indigo-700',
-    editor: 'bg-emerald-100 text-emerald-700',
-    viewer: 'bg-gray-100 text-gray-600',
+    owner: 'bg-primary-tint text-primary-tint-foreground',
+    editor: 'bg-success-tint text-success-tint-foreground',
+    viewer: 'bg-muted text-muted-foreground',
   };
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-gray-900">Settings</h2>
-      <p className="mt-2 text-sm text-gray-600">
+      <h2 className="text-xl font-semibold text-foreground">Settings</h2>
+      <p className="mt-2 text-sm text-muted-foreground">
         Manage trip details, members, and invite links.
       </p>
 
       {error && (
-        <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
+        <div className="mt-4 rounded-lg bg-danger-tint p-3 text-sm text-danger-tint-foreground">{error}</div>
       )}
 
       {/* ─── Members ─────────────────────────────────────────────────────── */}
-      <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6">
-        <h3 className="text-lg font-semibold text-gray-900">Members</h3>
-        <p className="mt-1 text-sm text-gray-600">
+      <div className="mt-8 rounded-2xl border border-border bg-card p-6">
+        <h3 className="text-lg font-semibold text-foreground">Members</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
           {isOwner
             ? 'Change roles or remove members. Editors can modify the itinerary; Viewers have read-only access.'
             : 'Everyone collaborating on this trip.'}
         </p>
 
-        <div className="mt-4 divide-y divide-gray-100">
+        <div className="mt-4 divide-y divide-border">
           {members.length === 0 && (
-            <p className="py-4 text-sm text-gray-400">Loading members…</p>
+            <p className="py-4 text-sm text-muted-foreground">Loading members…</p>
           )}
           {members.map((m) => {
             const isSelf = m.userId === userId;
@@ -335,10 +336,10 @@ export default function TripSettingsPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900">
-                    {m.userName} {isSelf && <span className="text-xs text-gray-400">(you)</span>}
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {m.userName} {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
                   </p>
-                  <p className="truncate text-xs text-gray-500">{m.userEmail}</p>
+                  <p className="truncate text-xs text-muted-foreground">{m.userEmail}</p>
                 </div>
 
                 {canManage ? (
@@ -352,7 +353,7 @@ export default function TripSettingsPage() {
                           newRole: e.target.value as 'editor' | 'viewer',
                         })
                       }
-                      className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="rounded-lg border border-border px-2 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       aria-label={`Change role for ${m.userName}`}
                     >
                       <option value="editor">Editor</option>
@@ -360,14 +361,14 @@ export default function TripSettingsPage() {
                     </select>
                     <button
                       onClick={() => setPendingAction({ kind: 'remove', member: m })}
-                      className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+                      className="rounded-lg border border-danger px-3 py-1.5 text-sm font-medium text-danger hover:bg-danger-tint"
                     >
                       Remove
                     </button>
                   </div>
                 ) : (
                   <span
-                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${roleBadgeClass[m.role] || 'bg-gray-100 text-gray-600'}`}
+                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${roleBadgeClass[m.role] || 'bg-muted text-muted-foreground'}`}
                   >
                     {m.role}
                   </span>
@@ -380,14 +381,14 @@ export default function TripSettingsPage() {
 
       {/* ─── Cover image + timezone ──────────────────────────────────────── */}
       {isOwner && (
-        <form onSubmit={handleSaveSettings} className="mt-8 rounded-xl border border-gray-200 bg-white p-6">
-          <h3 className="text-lg font-semibold text-gray-900">Trip Appearance</h3>
-          <p className="mt-1 text-sm text-gray-600">
+        <form onSubmit={handleSaveSettings} className="mt-8 rounded-2xl border border-border bg-card p-6">
+          <h3 className="text-lg font-semibold text-foreground">Trip Appearance</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
             Set a cover photo and the destination timezone.
           </p>
 
           <div className="mt-4">
-            <label htmlFor="cover-url" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="cover-url" className="block text-sm font-medium text-foreground">
               Cover Image URL
             </label>
             <input
@@ -396,24 +397,24 @@ export default function TripSettingsPage() {
               value={coverUrl}
               onChange={(e) => setCoverUrl(e.target.value)}
               placeholder="https://images.example.com/paris.jpg"
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
             {coverUrl.trim() && (
-              <div className="mt-3 h-32 w-full overflow-hidden rounded-lg border border-gray-200">
+              <div className="mt-3 h-32 w-full overflow-hidden rounded-lg border border-border">
                 <img src={coverUrl} alt="Cover preview" className="h-full w-full object-cover" />
               </div>
             )}
           </div>
 
           <div className="mt-4">
-            <label htmlFor="timezone" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="timezone" className="block text-sm font-medium text-foreground">
               Timezone
             </label>
             <select
               id="timezone"
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="">No timezone</option>
               {COMMON_TIMEZONES.map((tz) => (
@@ -426,7 +427,7 @@ export default function TripSettingsPage() {
               <button
                 type="button"
                 onClick={() => setTimezone(suggestedTz)}
-                className="mt-2 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                className="mt-2 text-xs font-medium text-primary hover:text-primary-tint-foreground"
               >
                 Suggested for {trip?.destination}: {suggestedTz} — use this
               </button>
@@ -437,80 +438,80 @@ export default function TripSettingsPage() {
             <button
               type="submit"
               disabled={savingSettings}
-              className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-hover disabled:opacity-50"
             >
               {savingSettings ? 'Saving…' : 'Save Appearance'}
             </button>
-            {settingsSaved && <span className="text-sm text-emerald-600">✓ Saved</span>}
+            {settingsSaved && <span className="text-sm text-success">✓ Saved</span>}
           </div>
         </form>
       )}
 
       {/* ─── Invite ──────────────────────────────────────────────────────── */}
-      <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6">
-        <h3 className="text-lg font-semibold text-gray-900">Invite Members</h3>
-        <p className="mt-1 text-sm text-gray-600">
+      <div className="mt-8 rounded-2xl border border-border bg-card p-6">
+        <h3 className="text-lg font-semibold text-foreground">Invite Members</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
           Share the invite code or link below. Anyone with this code can join as an Editor.
         </p>
 
         {loadingTrip ? (
-          <div className="mt-4 h-10 w-48 animate-pulse rounded-lg bg-gray-100" />
+          <div className="mt-4 h-10 w-48 animate-pulse rounded-lg bg-muted" />
         ) : inviteCode ? (
           <div className="mt-4 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-sm font-medium text-gray-900 select-all">
+              <div className="rounded-lg border border-border bg-muted px-4 py-2.5 font-mono text-sm font-medium text-foreground select-all">
                 {inviteCode}
               </div>
               <button
                 onClick={handleCopyCode}
-                className="rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-border px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
               >
                 {copied ? '✓ Copied' : 'Copy Code'}
               </button>
             </div>
             <button
               onClick={handleCopyInviteLink}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-hover"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
               {copied ? 'Copied!' : 'Copy Invite Link'}
             </button>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Link format: {typeof window !== 'undefined' ? window.location.origin : ''}/join/{inviteCode}
             </p>
           </div>
         ) : (
-          <p className="mt-4 text-sm text-gray-500">Unable to load invite code.</p>
+          <p className="mt-4 text-sm text-muted-foreground">Unable to load invite code.</p>
         )}
       </div>
 
       {/* ─── Danger Zone ─────────────────────────────────────────────────── */}
-      <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6">
-        <h3 className="text-lg font-semibold text-red-900">Danger Zone</h3>
+      <div className="mt-8 rounded-2xl border border-danger/40 bg-danger-tint p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-danger-tint-foreground">Danger Zone</h3>
         {isOwner ? (
           <>
-            <p className="mt-1 text-sm text-red-700">
+            <p className="mt-1 text-sm text-danger-tint-foreground">
               Deleting a trip is permanent. All days, activities, votes, and expenses will be removed.
             </p>
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className="mt-4 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-50"
+              className="mt-4 rounded-lg bg-danger px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-danger-hover disabled:opacity-50"
             >
               {deleting ? 'Deleting...' : 'Delete This Trip'}
             </button>
           </>
         ) : (
           <>
-            <p className="mt-1 text-sm text-red-700">
+            <p className="mt-1 text-sm text-danger-tint-foreground">
               Leaving a trip will remove your access to the itinerary, votes, and expenses.
             </p>
             <button
               onClick={handleLeave}
               disabled={leaving}
-              className="mt-4 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-50"
+              className="mt-4 rounded-lg bg-danger px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-danger-hover disabled:opacity-50"
             >
               {leaving ? 'Leaving...' : 'Leave This Trip'}
             </button>

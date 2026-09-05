@@ -13,7 +13,7 @@ export function ActivityFeedButton({ unreadCount, onClick }: ActivityFeedButtonP
   return (
     <button
       onClick={onClick}
-      className="relative flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 shadow-sm hover:bg-gray-50 transition"
+      className="relative flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground shadow-sm hover:bg-muted transition"
       aria-label="Toggle activity feed"
       title="Activity feed"
     >
@@ -29,7 +29,7 @@ export function ActivityFeedButton({ unreadCount, onClick }: ActivityFeedButtonP
 
       {/* Unread count badge */}
       {unreadCount > 0 && (
-        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
           {unreadCount > 99 ? '99+' : unreadCount}
         </span>
       )}

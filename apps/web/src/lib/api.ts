@@ -41,7 +41,14 @@ export async function fetchTrips(token: string) {
  */
 export async function createTripApi(
   token: string,
-  input: { title: string; destination: string; startDate: string; endDate: string }
+  input: {
+    title: string;
+    destination: string;
+    destinationLat?: number | null;
+    destinationLng?: number | null;
+    startDate: string;
+    endDate: string;
+  }
 ) {
   const res = await apiFetch('/api/trips', {
     method: 'POST',

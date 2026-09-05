@@ -35,6 +35,18 @@ const REFERER = process.env.GEOCODE_REFERER || 'https://localhost';
 /** Optional, but Nominatim recommends it so they can reach you before blocking. */
 const CONTACT_EMAIL = process.env.GEOCODE_CONTACT_EMAIL || '';
 
+/**
+ * Optional ISO 3166-1 alpha-2 country codes to restrict every search to, e.g.
+ * "in" or "in,np,bt". When set, Nominatim drops results outside these countries
+ * entirely — this is a hard filter, not a soft ranking bias. Leave unset for
+ * worldwide search. Parsed once at startup.
+ */
+const COUNTRY_CODES = (process.env.GEOCODE_COUNTRY_CODES || '')
+  .split(',')
+  .map((c) => c.trim().toLowerCase())
+  .filter((c) => /^[a-z]{2}$/.test(c))
+  .join(',');
+
 /** Nominatim's absolute limit is 1 req/sec; 1.1s leaves headroom for clock skew. */
 const MIN_REQUEST_INTERVAL_MS = 1100;
 const REQUEST_TIMEOUT_MS = 8000;
@@ -203,10 +215,33 @@ function viewboxParam(box: BoundingBox): string {
   return `${west},${north},${east},${south}`;
 }
 
+/**
+ * Degrees of padding around a destination center point. ~0.5° is roughly 55km
+ * at the equator — a metro-area-sized box. This only feeds a *soft* bias
+ * (ranking preference, never a hard filter), so an approximate box is fine:
+ * it nudges "station" toward the trip's city without excluding anything.
+ */
+const DESTINATION_VIEWBOX_PADDING_DEG = 0.5;
+
+/** Builds a soft-bias viewbox around a destination center, clamped to valid ranges. */
+export function viewboxFromPoint(
+  lat: number,
+  lng: number,
+  pad = DESTINATION_VIEWBOX_PADDING_DEG
+): BoundingBox {
+  return [
+    Math.max(-90, lat - pad),
+    Math.min(90, lat + pad),
+    Math.max(-180, lng - pad),
+    Math.min(180, lng + pad),
+  ];
+}
+
 // ─── Core request ────────────────────────────────────────────────────────────
 
 async function requestNominatim(path: string, params: URLSearchParams): Promise<unknown> {
   if (CONTACT_EMAIL) params.set('email', CONTACT_EMAIL);
+  if (COUNTRY_CODES) params.set('countrycodes', COUNTRY_CODES);
 
   const url = `${NOMINATIM_BASE_URL}${path}?${params.toString()}`;
 
@@ -268,6 +303,9 @@ export async function searchPlaces(
     viewbox ? viewboxParam(viewbox) : '',
     effectiveBounded ? '1' : '0',
     language,
+    // Part of the key so flipping GEOCODE_COUNTRY_CODES doesn't serve results
+    // from the old country set.
+    COUNTRY_CODES,
   ]);
 
   const cached = await readCache<GeocodeResult[]>(key);
@@ -303,7 +341,7 @@ export async function resolveDestinationViewbox(destination: string): Promise<Bo
   const normalized = normalizeQuery(destination);
   if (!normalized) return null;
 
-  const key = cacheKey(['destination', normalized]);
+  const key = cacheKey(['destination', normalized, COUNTRY_CODES]);
   // Cached as `{ box }` so a resolved-but-empty lookup is distinguishable from a miss.
   const cached = await readCache<{ box: BoundingBox | null }>(key);
   if (cached) return cached.box;
@@ -332,9 +370,17 @@ export async function searchPlacesForTrip(
   query: string,
   destination: string | null,
   limit = DEFAULT_LIMIT,
-  language = 'en'
+  language = 'en',
+  destinationCoords: { lat: number; lng: number } | null = null
 ): Promise<{ results: GeocodeResult[]; biased: boolean }> {
-  const viewbox = destination ? await resolveDestinationViewbox(destination) : null;
+  // Prefer coordinates captured at trip creation: deterministic and free (no
+  // upstream call). Fall back to geocoding the destination string only for
+  // trips created before we stored coordinates, or destinations typed by hand.
+  const viewbox = destinationCoords
+    ? viewboxFromPoint(destinationCoords.lat, destinationCoords.lng)
+    : destination
+      ? await resolveDestinationViewbox(destination)
+      : null;
 
   if (viewbox) {
     const bounded = await searchPlaces(query, { limit, viewbox, bounded: true, language });

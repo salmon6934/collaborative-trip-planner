@@ -30,6 +30,7 @@ interface LocationSearchInputProps {
   /** Biases results toward the trip's destination. */
   tripId?: string;
   id?: string;
+  label?: string;
   placeholder?: string;
   disabled?: boolean;
 }
@@ -62,6 +63,7 @@ export function LocationSearchInput({
   token,
   tripId,
   id,
+  label = 'Location',
   placeholder = 'Search a place, e.g. Tokyo Tower',
   disabled = false,
 }: LocationSearchInputProps) {
@@ -161,8 +163,8 @@ export function LocationSearchInput({
 
   return (
     <div ref={containerRef} className="relative">
-      <label htmlFor={inputId} className="block text-sm font-medium text-gray-700">
-        Location
+      <label htmlFor={inputId} className="block text-sm font-medium text-foreground">
+        {label}
       </label>
 
       <div className="relative mt-1">
@@ -174,7 +176,7 @@ export function LocationSearchInput({
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          className="block w-full rounded-lg border border-gray-300 px-3 py-2 pr-9 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50"
+          className="block w-full rounded-lg border border-border px-3 py-2 pr-9 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:bg-muted"
           placeholder={placeholder}
           autoComplete="off"
           role="combobox"
@@ -195,7 +197,7 @@ export function LocationSearchInput({
             role="status"
             aria-label="Searching locations"
           >
-            <span className="block h-4 w-4 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600" />
+            <span className="block h-4 w-4 animate-spin rounded-full border-2 border-primary-tint border-t-primary" />
           </span>
         )}
       </div>
@@ -204,20 +206,20 @@ export function LocationSearchInput({
       <div id={`${inputId}-hint`} className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
         {hasCoordinates ? (
           <>
-            <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 font-medium text-green-700">
+            <span className="inline-flex items-center gap-1 rounded-full bg-success-tint px-2 py-0.5 font-medium text-success-tint-foreground">
               <span aria-hidden="true">📍</span>
               Pinned {value.latitude!.toFixed(4)}, {value.longitude!.toFixed(4)}
             </span>
             <button
               type="button"
               onClick={clearCoordinates}
-              className="font-medium text-gray-500 underline hover:text-gray-700"
+              className="font-medium text-muted-foreground underline hover:text-foreground"
             >
               Remove pin
             </button>
           </>
         ) : (
-          <span className="text-gray-500">
+          <span className="text-muted-foreground">
             {value.locationName.trim()
               ? 'No coordinates yet — pick a search result to place this on the map.'
               : 'Search for a place to add it to the map.'}
@@ -226,13 +228,13 @@ export function LocationSearchInput({
       </div>
 
       {error && (
-        <p className="mt-1 text-xs text-red-600" role="alert">
+        <p className="mt-1 text-xs text-danger" role="alert">
           {error}
         </p>
       )}
 
       {showDropdown && (results.length > 0 || showNoMatches) && (
-        <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+        <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-border bg-card shadow-lg">
           <ul id={listboxId} role="listbox" aria-label="Location suggestions" className="max-h-60 overflow-y-auto">
             {results.map((result, index) => {
               const { primary, secondary } = splitLabel(result);
@@ -253,16 +255,16 @@ export function LocationSearchInput({
                     }}
                     onMouseEnter={() => setActiveIndex(index)}
                     className={`flex w-full items-start gap-2 px-3 py-2 text-left text-sm ${
-                      index === activeIndex ? 'bg-indigo-50' : 'hover:bg-gray-50'
+                      index === activeIndex ? 'bg-primary-tint' : 'hover:bg-muted'
                     }`}
                   >
                     <span aria-hidden="true" className="mt-0.5">
                       {resultIcon(result)}
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate font-medium text-gray-900">{primary}</span>
+                      <span className="block truncate font-medium text-foreground">{primary}</span>
                       {secondary && (
-                        <span className="block truncate text-xs text-gray-500">{secondary}</span>
+                        <span className="block truncate text-xs text-muted-foreground">{secondary}</span>
                       )}
                     </span>
                   </button>
@@ -272,13 +274,13 @@ export function LocationSearchInput({
           </ul>
 
           {showNoMatches && (
-            <p className="px-3 py-2 text-xs text-gray-500">
+            <p className="px-3 py-2 text-xs text-muted-foreground">
               No places found. You can still type a location name — it just won&apos;t get a map pin.
             </p>
           )}
 
           {results.length > 0 && (
-            <p className="border-t border-gray-100 px-3 py-1.5 text-[11px] text-gray-400">
+            <p className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
               Search by OpenStreetMap / Nominatim
             </p>
           )}

@@ -145,17 +145,17 @@ export function AddActivityModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">
+      <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-xl">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
           {isEdit ? 'Edit Activity' : 'Add Activity'}
         </h2>
 
-        {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+        {error && <div className="mb-4 rounded-lg bg-danger-tint p-3 text-sm text-danger">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="activity-title" className="block text-sm font-medium text-gray-700">
-              Title <span className="text-red-500">*</span>
+            <label htmlFor="activity-title" className="block text-sm font-medium text-foreground">
+              Title <span className="text-danger">*</span>
             </label>
             <input
               id="activity-title"
@@ -163,20 +163,20 @@ export function AddActivityModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="Visit Eiffel Tower"
             />
           </div>
 
           <div>
-            <label htmlFor="activity-category" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="activity-category" className="block text-sm font-medium text-foreground">
               Category
             </label>
             <select
               id="activity-category"
               value={category}
               onChange={(e) => setCategory(e.target.value as ActivityCategory)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="activity">🎯 Activity</option>
               <option value="food">🍽️ Food</option>
@@ -187,7 +187,7 @@ export function AddActivityModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="start-time" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="start-time" className="block text-sm font-medium text-foreground">
                 Start Time
               </label>
               <input
@@ -195,11 +195,11 @@ export function AddActivityModal({
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <div>
-              <label htmlFor="end-time" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="end-time" className="block text-sm font-medium text-foreground">
                 End Time
               </label>
               <input
@@ -207,7 +207,7 @@ export function AddActivityModal({
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
@@ -221,7 +221,7 @@ export function AddActivityModal({
           />
 
           <div>
-            <label htmlFor="estimated-cost" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="estimated-cost" className="block text-sm font-medium text-foreground">
               Estimated Cost
             </label>
             <input
@@ -231,13 +231,13 @@ export function AddActivityModal({
               min="0"
               value={estimatedCost}
               onChange={(e) => setEstimatedCost(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="25.00"
             />
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="description" className="block text-sm font-medium text-foreground">
               Notes
             </label>
             <textarea
@@ -245,7 +245,7 @@ export function AddActivityModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="Any details, booking references, reminders…"
             />
           </div>
@@ -254,14 +254,14 @@ export function AddActivityModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+              className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-hover disabled:opacity-50"
             >
               {loading ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Activity'}
             </button>
