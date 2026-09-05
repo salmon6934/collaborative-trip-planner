@@ -1,10 +1,19 @@
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-indigo-600 sm:text-5xl">Trip Planner</h1>
+      <div className="flex flex-col items-center text-center">
+        <Image
+          src="/brand/mark.png"
+          alt=""
+          width={104}
+          height={104}
+          priority
+          aria-hidden="true"
+        />
+        <h1 className="mt-4 text-4xl font-bold text-indigo-600 sm:text-5xl">TripSync</h1>
         <p className="mt-4 text-lg text-gray-600">
           Plan trips together in real-time with your group.
         </p>

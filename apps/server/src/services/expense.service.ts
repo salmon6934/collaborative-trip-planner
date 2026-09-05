@@ -3,7 +3,7 @@ import { db } from '../db/index.js';
 import { expenses, expenseSplits, settlements, users } from '../db/schema.js';
 import { getMembers } from './trip.service.js';
 import { logActivityAndBroadcast } from './activity-feed.service.js';
-import { ErrorCodes, type SettlementTransaction } from '@trip-planner/shared';
+import { ErrorCodes, type SettlementTransaction } from '@tripsync/shared';
 
 // ─── Split Calculation Utilities (integer minor units) ───────────────────────
 //

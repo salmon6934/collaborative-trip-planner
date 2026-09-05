@@ -4,7 +4,7 @@ import * as schema from './schema';
 
 const connectionString =
   process.env.DATABASE_URL ??
-  'postgresql://tripplanner:tripplanner_dev@localhost:5432/tripplanner';
+  'postgresql://tripsync:tripsync_dev@localhost:5432/tripsync';
 
 // Connection pool for queries
 const client = postgres(connectionString);

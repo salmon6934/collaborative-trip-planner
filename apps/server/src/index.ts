@@ -6,6 +6,7 @@ import authRouter from './routes/auth.js';
 import tripsRouter from './routes/trips.js';
 import votesRouter from './routes/votes.js';
 import notificationsRouter from './routes/notifications.js';
+import geocodeRouter from './routes/geocode.js';
 import { initializeSocketServer } from './socket/index.js';
 import { setIoInstance } from './socket/io-instance.js';
 import { authRateLimiter, apiRateLimiter } from './middleware/rate-limit.js';
@@ -49,6 +50,7 @@ app.use('/api/auth', authRateLimiter, authRouter);
 app.use('/api/trips', tripsRouter);
 app.use('/api/votes', votesRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/geocode', geocodeRouter);
 
 // Initialize Socket.io with Redis adapter
 const io = initializeSocketServer(httpServer, REDIS_URL);
@@ -56,7 +58,7 @@ setIoInstance(io);
 
 // Start server using httpServer instead of app.listen
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Trip Planner Server running on http://localhost:${PORT}`);
+  console.log(`🚀 TripSync Server running on http://localhost:${PORT}`);
 });
 
 export { io };

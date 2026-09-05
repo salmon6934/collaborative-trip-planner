@@ -1,4 +1,4 @@
-import { MIN_AVATAR_ID, MAX_AVATAR_ID } from '@trip-planner/shared';
+import { MIN_AVATAR_ID, MAX_AVATAR_ID } from '@tripsync/shared';
 import { z } from 'zod';
 
 // Reusable base schemas

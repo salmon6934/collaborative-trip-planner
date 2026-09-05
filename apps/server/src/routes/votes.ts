@@ -11,7 +11,7 @@ import {
   getTallies,
   addWinnerToItinerary,
 } from '../services/voting.service.js';
-import { ErrorCodes } from '@trip-planner/shared';
+import { ErrorCodes } from '@tripsync/shared';
 
 // ─── Trip-scoped vote routes (mounted on /api/trips) ─────────────────────────
 

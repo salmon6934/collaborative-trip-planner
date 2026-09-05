@@ -4,7 +4,7 @@ import {
   pickAvatarIdForSeed,
   MIN_AVATAR_ID,
   MAX_AVATAR_ID,
-} from '@trip-planner/shared';
+} from '@tripsync/shared';
 
 /**
  * A selectable default avatar.

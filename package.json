@@ -1,13 +1,14 @@
 {
-  "name": "collaborative-trip-planner",
+  "name": "tripsync",
   "version": "1.0.0",
   "private": true,
-  "description": "Real-Time Collaborative Trip Planner",
+  "description": "TripSync — real-time collaborative trip planning",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
+    "dev": "concurrently -n server,web -c blue,magenta \"npm:dev:server\" \"npm:dev:web\"",
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:server": "npm run dev --workspace=apps/server",
     "build": "npm run build --workspaces",
@@ -20,18 +21,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/salmon6934/collaborative-trip-planner.git"
+    "url": "git+https://github.com/salmon6934/tripsync.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/salmon6934/collaborative-trip-planner/issues"
+    "url": "https://github.com/salmon6934/tripsync/issues"
   },
-  "homepage": "https://github.com/salmon6934/collaborative-trip-planner#readme",
+  "homepage": "https://github.com/salmon6934/tripsync#readme",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "concurrently": "10.0.5",
+    "dotenv-cli": "11.0.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.0",

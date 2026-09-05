@@ -54,3 +54,12 @@ INTERVIEW_PREP.md
 # Personal / local-only docs
 splitwise-clone-agent-guide.md
 stich frontend
+
+# Brand source artwork (~5 MB original). The shipped assets are derived from it
+# and ARE committed: apps/web/public/brand/mark.png, apps/web/src/app/icon.png
+# and favicon.ico. Kept out of git so the binary never enters history; keep a
+# copy somewhere safe if you ever need to re-crop.
+#
+# Leading slash matters: without it this would also match
+# apps/web/public/brand/, excluding the asset the app actually serves.
+/brand/

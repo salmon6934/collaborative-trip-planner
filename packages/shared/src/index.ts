@@ -1,4 +1,4 @@
-// Shared types and utilities for the Collaborative Trip Planner
+// Shared types and utilities for TripSync
 
 export * from './types';
 export * from './constants';

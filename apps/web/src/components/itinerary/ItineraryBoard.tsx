@@ -21,7 +21,7 @@ import { ConflictDialog, ConflictData } from './ConflictDialog';
 import type { BlockData, MemberInfo } from './SortableBlock';
 import { useSocket } from '../../hooks/useSocket';
 import { useTripSync } from '../../hooks/useTripSync';
-import type { ActivityCategory } from '@trip-planner/shared';
+import type { ActivityCategory } from '@tripsync/shared';
 import { timezoneAbbreviation } from '@/lib/format';
 
 interface DayData {
@@ -407,8 +407,28 @@ export function ItineraryBoard() {
   // Conflict resolution
   async function handleKeepMine() {
     if (!conflict) return;
-    const { title, category, startTime, endTime, locationName, estimatedCost, description } = conflict.mine;
-    await forceUpdate(conflict.theirs.id, { title, category, startTime, endTime, locationName, estimatedCost, description });
+    const {
+      title,
+      category,
+      startTime,
+      endTime,
+      locationName,
+      latitude,
+      longitude,
+      estimatedCost,
+      description,
+    } = conflict.mine;
+    await forceUpdate(conflict.theirs.id, {
+      title,
+      category,
+      startTime,
+      endTime,
+      locationName,
+      latitude,
+      longitude,
+      estimatedCost,
+      description,
+    });
     setConflict(null);
   }
   function handleKeepTheirs() {
@@ -736,6 +756,8 @@ export function ItineraryBoard() {
             startTime: editState.block.startTime ?? undefined,
             endTime: editState.block.endTime ?? undefined,
             locationName: editState.block.locationName ?? undefined,
+            latitude: editState.block.latitude,
+            longitude: editState.block.longitude,
             estimatedCost: editState.block.estimatedCost ?? undefined,
             description: editState.block.description ?? undefined,
           }}

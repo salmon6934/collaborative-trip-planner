@@ -1,25 +1,30 @@
+# Explicit project name. Without this, Compose derives it from the directory
+# name ("trip planner" -> "tripplanner"), which would leave volumes and the
+# network carrying the old project name.
+name: tripsync
+
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: trip-planner-postgres
+    container_name: tripsync-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: tripplanner
-      POSTGRES_PASSWORD: tripplanner_dev
-      POSTGRES_DB: tripplanner
+      POSTGRES_USER: tripsync
+      POSTGRES_PASSWORD: tripsync_dev
+      POSTGRES_DB: tripsync
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tripplanner"]
+      test: ["CMD-SHELL", "pg_isready -U tripsync"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: trip-planner-redis
+    container_name: tripsync-redis
     restart: unless-stopped
     ports:
       - "6379:6379"

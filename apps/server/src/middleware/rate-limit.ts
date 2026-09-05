@@ -30,6 +30,24 @@ export const apiRateLimiter = rateLimit({
 });
 
 /**
+ * Geocoding proxy rate limiter: 40 requests per minute per IP.
+ *
+ * Tighter than the general API limiter because each miss can cost an upstream
+ * Nominatim call, and their usage policy caps us at ~1 req/sec overall. The
+ * client debounces and results are cached, so a real user stays well under this.
+ */
+export const geocodeRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many location searches, please slow down',
+  },
+});
+
+/**
  * Socket.io event rate limiter for block mutations.
  * Tracks per-user event counts in a simple in-memory map.
  * Throttle: 30 mutations per minute per user.

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { getMembership } from '../services/trip.service.js';
-import { TripRole } from '@trip-planner/shared';
+import { TripRole } from '@tripsync/shared';
 
 // Extend Express Request to include member role
 /* eslint-disable @typescript-eslint/no-namespace */

@@ -1,4 +1,4 @@
-// Default profile avatars for the Collaborative Trip Planner.
+// Default profile avatars for TripSync.
 //
 // These live in the shared package so the web app (picker UI) and the server
 // (assigning an avatar at signup) resolve the exact same set — no drift.

@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useParams } from 'next/navigation';
-import type { ActivityCategory } from '@trip-planner/shared';
+import type { ActivityCategory } from '@tripsync/shared';
 import {
   assignDayColors,
   buildRouteSegments,
@@ -101,7 +101,9 @@ export function TripMap() {
   }, [fetchDays, fetchTrip]);
 
   // Keep pins in sync when collaborators change blocks while the map is open.
-  const { socket } = useSocket({ tripId, token });
+  // `onReconnect` also refetches after a dropped connection, since any block
+  // events broadcast while we were offline are gone for good.
+  const { socket } = useSocket({ tripId, token, onReconnect: fetchDays });
   useEffect(() => {
     if (!socket) return;
     const refetch = () => fetchDays();

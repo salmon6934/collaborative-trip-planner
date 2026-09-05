@@ -2,7 +2,7 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { ActivityCategory } from '@trip-planner/shared';
+import type { ActivityCategory } from '@tripsync/shared';
 import { formatTime, formatRelativeTime, formatAbsoluteDate, isWithinHours } from '@/lib/format';
 
 export interface BlockData {

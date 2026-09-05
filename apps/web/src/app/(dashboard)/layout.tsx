@@ -1,6 +1,6 @@
-import Link from 'next/link';
-import { UserMenu } from '@/components/UserMenu';
+import { Logo } from '@/components/Logo';
 import { NotificationBell } from '@/components/NotificationBell';
+import { UserMenu } from '@/components/UserMenu';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -8,9 +8,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Navigation */}
       <header className="border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/dashboard" className="text-xl font-bold text-indigo-600">
-            Trip Planner
-          </Link>
+          <Logo href="/dashboard" size={32} />
           <div className="flex items-center gap-3">
             <NotificationBell />
             <UserMenu />

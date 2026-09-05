@@ -1,7 +1,7 @@
 import { eq, and, count } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { votes, voteOptions, voteResponses } from '../db/schema.js';
-import { ErrorCodes } from '@trip-planner/shared';
+import { ErrorCodes } from '@tripsync/shared';
 import { createBlock, CreateBlockInput } from './itinerary.service.js';
 import { logActivityAndBroadcast } from './activity-feed.service.js';
 

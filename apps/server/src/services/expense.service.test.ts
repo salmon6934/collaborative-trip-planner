@@ -89,7 +89,7 @@ import {
   computeSettlements,
   simplifyDebts,
 } from './expense.service.js';
-import { ErrorCodes } from '@trip-planner/shared';
+import { ErrorCodes } from '@tripsync/shared';
 import { logActivityAndBroadcast } from './activity-feed.service.js';
 
 // ─── Pure Split Math ─────────────────────────────────────────────────────────

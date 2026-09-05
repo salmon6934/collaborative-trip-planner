@@ -73,7 +73,7 @@ vi.mock('./activity-feed.service.js', () => ({
 }));
 
 import { createPoll, castVote, hasUserVoted, getTallies, resolvePoll, listPolls } from './voting.service.js';
-import { ErrorCodes } from '@trip-planner/shared';
+import { ErrorCodes } from '@tripsync/shared';
 
 describe('Voting Service', () => {
   beforeEach(() => {

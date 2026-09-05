@@ -119,6 +119,8 @@ export function useTripSync({ socket, days, setDays }: UseTripSyncOptions) {
       startTime?: string;
       endTime?: string;
       locationName?: string;
+      latitude?: number;
+      longitude?: number;
       estimatedCost?: number;
       description?: string;
     }): Promise<{ ok: boolean; error?: string }> => {
@@ -133,8 +135,10 @@ export function useTripSync({ socket, days, setDays }: UseTripSyncOptions) {
         startTime: input.startTime || null,
         endTime: input.endTime || null,
         locationName: input.locationName || null,
-        latitude: null,
-        longitude: null,
+        // `?? null` rather than `|| null` so a legitimate 0 coordinate (the
+        // equator / prime meridian) survives the optimistic render.
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
         estimatedCost: input.estimatedCost ?? null,
         currency: 'INR',
         position: Date.now(), // Will be corrected by server
@@ -312,7 +316,11 @@ export function useTripSync({ socket, days, setDays }: UseTripSyncOptions) {
         startTime: source.startTime || undefined,
         endTime: source.endTime || undefined,
         locationName: source.locationName || undefined,
+        // Coordinates travel with the copy, so a duplicated block keeps its pin.
+        latitude: source.latitude ?? undefined,
+        longitude: source.longitude ?? undefined,
         estimatedCost: source.estimatedCost ?? undefined,
+        description: source.description || undefined,
       });
     },
     [createBlock],

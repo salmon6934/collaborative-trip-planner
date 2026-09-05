@@ -15,7 +15,7 @@ import { MapContainer, TileLayer, Marker, Polyline, Popup, Tooltip, useMap } fro
 import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import 'leaflet/dist/leaflet.css';
-import type { ActivityCategory } from '@trip-planner/shared';
+import type { ActivityCategory } from '@tripsync/shared';
 import type { MapPin, RouteSegment } from '@/lib/map-utils';
 import {
   computePinsBounds,

@@ -26,7 +26,7 @@
       "@/*": [
         "./src/*"
       ],
-      "@trip-planner/shared": [
+      "@tripsync/shared": [
         "../../packages/shared/src"
       ]
     }

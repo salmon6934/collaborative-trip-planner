@@ -16,7 +16,7 @@ import {
   getTripSummary,
   computeSettlements,
 } from '../services/expense.service.js';
-import { ErrorCodes } from '@trip-planner/shared';
+import { ErrorCodes } from '@tripsync/shared';
 import { getIoInstance } from '../socket/io-instance.js';
 
 /**

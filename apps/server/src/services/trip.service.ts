@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid';
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { trips, tripMembers, users } from '../db/schema.js';
-import { ErrorCodes } from '@trip-planner/shared';
+import { ErrorCodes } from '@tripsync/shared';
 import { generateDays } from './itinerary.service.js';
 
 // ─── Types ───────────────────────────────────────────────────────────────────

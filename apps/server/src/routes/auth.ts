@@ -2,7 +2,7 @@ import {
   getAvatarDataUri,
   isValidAvatarId,
   pickAvatarIdForSeed,
-} from '@trip-planner/shared';
+} from '@tripsync/shared';
 import { Router, Request, Response, RequestHandler } from 'express';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';

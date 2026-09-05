@@ -1,5 +1,5 @@
 /**
- * Map helpers for the trip planner's map view.
+ * Map helpers for the TripSync map view.
  *
  * These utilities transform itinerary Activity_Blocks into map-ready data:
  *  - convert blocks (which may lack coordinates) into typed pins,
@@ -11,7 +11,7 @@
  * without a DOM or Leaflet.
  */
 
-import type { ActivityCategory } from '@trip-planner/shared';
+import type { ActivityCategory } from '@tripsync/shared';
 
 /** A single map marker derived from an Activity_Block with valid coordinates. */
 export interface MapPin {

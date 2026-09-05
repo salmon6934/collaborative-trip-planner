@@ -33,12 +33,28 @@ const FIELDS: { key: FieldKey; label: string }[] = [
   { key: 'description', label: 'Notes' },
 ];
 
-function mineValue(mine: ActivityFormValues, key: FieldKey): string {
-  const v = (mine as any)[key];
-  return v === undefined || v === null || v === '' ? '—' : String(v);
+/**
+ * The location row stands for three fields at once (name + lat/lng), so it
+ * renders the coordinates alongside the name. Otherwise two versions with the
+ * same label but different pins would look identical in the diff.
+ */
+function formatLocation(source: { locationName?: string | null; latitude?: number | null; longitude?: number | null }): string {
+  const label = source.locationName?.trim() || '';
+  const { latitude, longitude } = source;
+  const pin =
+    latitude != null && longitude != null
+      ? `📍 ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+      : 'no pin';
+  if (!label) return latitude != null && longitude != null ? pin : '—';
+  return `${label} · ${pin}`;
 }
-function theirsValue(theirs: BlockData, key: FieldKey): string {
-  const v = (theirs as any)[key];
+
+function fieldValue(
+  source: ActivityFormValues | BlockData,
+  key: FieldKey
+): string {
+  if (key === 'locationName') return formatLocation(source);
+  const v = (source as any)[key];
   return v === undefined || v === null || v === '' ? '—' : String(v);
 }
 
@@ -57,12 +73,21 @@ export function ConflictDialog({ conflict, onKeepMine, onKeepTheirs, onMerge, on
   function handleMerge() {
     const merged: Partial<ActivityFormValues> = {};
     for (const f of FIELDS) {
-      if (choices[f.key]) {
-        (merged as any)[f.key] = (mine as any)[f.key];
-      } else {
-        const tv = (theirs as any)[f.key];
-        (merged as any)[f.key] = tv === null ? undefined : tv;
+      const source = choices[f.key] ? mine : theirs;
+
+      if (f.key === 'locationName') {
+        // Coordinates follow the chosen location name. Picking one side's label
+        // while keeping the other side's pin would put the activity in the
+        // wrong place on the map. `null` (not undefined) so choosing an
+        // unpinned version actually clears the coordinates server-side.
+        merged.locationName = source.locationName ?? undefined;
+        merged.latitude = source.latitude ?? null;
+        merged.longitude = source.longitude ?? null;
+        continue;
       }
+
+      const v = (source as any)[f.key];
+      (merged as any)[f.key] = v === null ? undefined : v;
     }
     onMerge(merged);
   }
@@ -83,8 +108,8 @@ export function ConflictDialog({ conflict, onKeepMine, onKeepTheirs, onMerge, on
             <div className="px-3 py-2">Current version{theirsEditorName ? ` (${theirsEditorName})` : ''}</div>
           </div>
           {FIELDS.map((f) => {
-            const mv = mineValue(mine, f.key);
-            const tv = theirsValue(theirs, f.key);
+            const mv = fieldValue(mine, f.key);
+            const tv = fieldValue(theirs, f.key);
             const differs = mv !== tv;
             return (
               <div

@@ -5,7 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@trip-planner/shared': fileURLToPath(new URL('../../packages/shared/src', import.meta.url)),
+      '@tripsync/shared': fileURLToPath(new URL('../../packages/shared/src', import.meta.url)),
     },
   },
   test: {

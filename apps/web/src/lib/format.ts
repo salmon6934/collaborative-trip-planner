@@ -1,5 +1,5 @@
 /**
- * Formatting helpers shared across the trip planner UI:
+ * Formatting helpers shared across the TripSync UI:
  * date-range display, relative timestamps, and timezone abbreviations.
  * Implemented without external date libraries to keep the bundle lean.
  */

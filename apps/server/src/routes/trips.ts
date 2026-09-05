@@ -26,7 +26,7 @@ import {
 import { getDaysWithBlocks, createBlock, updateBlock, deleteBlock, moveBlock, reorderBlocks } from '../services/itinerary.service.js';
 import { notifyTripMembers } from '../services/notification.service.js';
 import { getRecentActions, formatDescription, getActivityFeed } from '../services/activity-feed.service.js';
-import { ErrorCodes } from '@trip-planner/shared';
+import { ErrorCodes } from '@tripsync/shared';
 import { getIoInstance } from '../socket/io-instance.js';
 import { tripVoteRoutes } from './votes.js';
 import { tripExpenseRoutes, tripSettlementRoutes, tripBalanceRoutes } from './expenses.js';

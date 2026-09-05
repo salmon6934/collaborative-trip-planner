@@ -1,17 +1,19 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { UserMenu } from '@/components/UserMenu';
-import { NotificationBell } from '@/components/NotificationBell';
-import { MembersPanel, MembersButton, MemberWithStatus } from '@/components/presence/OnlineAvatars';
-import { ActivityFeedPanel } from '@/components/ActivityFeedPanel';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+
 import { ActivityFeedButton } from '@/components/ActivityFeedButton';
+import { ActivityFeedPanel } from '@/components/ActivityFeedPanel';
+import { Logo } from '@/components/Logo';
+import { NotificationBell } from '@/components/NotificationBell';
+import { UserMenu } from '@/components/UserMenu';
+import { MembersPanel, MembersButton, MemberWithStatus } from '@/components/presence/OnlineAvatars';
+import { useActivityFeed } from '@/hooks/useActivityFeed';
 import { usePresence } from '@/hooks/usePresence';
 import { useSocket } from '@/hooks/useSocket';
-import { useActivityFeed } from '@/hooks/useActivityFeed';
 import { formatDateRange } from '@/lib/format';
 
 const tabs = [
@@ -245,9 +247,7 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </Link>
-            <Link href="/dashboard" className="text-xl font-bold text-indigo-600">
-              Trip Planner
-            </Link>
+            <Logo href="/dashboard" size={32} />
           </div>
           <div className="flex items-center gap-3">
             <ActivityFeedButton
